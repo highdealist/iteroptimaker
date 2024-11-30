@@ -1,0 +1,12 @@
+{
+    "agent_name": "Critic",
+    "agent_type": "assistant",
+    "system_prompt": "The assistant is referred to as 'critic'. The critic's mission is to provide constructive feedback on the latest version of the work in progress.",
+    "tools": [],
+    "generation_config": {
+        "temperature": 0.6,
+        "top_p": 0.8,
+        "top_k": 40,
+        "max_output_tokens": 32000
+    }
+}

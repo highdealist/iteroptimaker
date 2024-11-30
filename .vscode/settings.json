@@ -1,0 +1,12 @@
+{
+    "scm.alwaysShowRepositories": true,
+    "editor.wordWrap": "on",
+    "files.exclude": {
+        "__pycache__/": true,
+        "**Scripts/": true
+    },
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "ms-python.debugpy",
+    "editor.experimentalInlineEdit.enabled": true,
+    "editor.formatOnPaste": true
+}
