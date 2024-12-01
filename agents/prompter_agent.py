@@ -1,6 +1,6 @@
 """Prompter agent for enhancing and refining user prompts."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class PrompterAgent(BaseAgent):
     """Agent specialized in enhancing and refining user prompts."""
@@ -14,8 +14,8 @@ class PrompterAgent(BaseAgent):
         name: str = "prompter"
     ):
         if instruction is None:
-            instruction = """Enhance user prompts by: 1. Adding relevant details and context. 2. Ensuring 
-                           clarity and precision. 3. Providing comprehensive instructions. 4. Emphasizing 
+            instruction = """Enhance user prompts by filling in any gaps, correcting any erroneous terminology, fixing any flawed grammar, and if appropriate reorganizing and formatting it into clear, cohesive sections with their logical flow optimized for other large language / AI models to best understand and interpret.   ideas or instructions : 1. Adding relevant details and context to ensure completeness and comprehensiveness. 2. Ensuring 
+                           clarity and precision. 4. Emphasizing 
                            clarity to avoid misinterpretations. Respond with 'Instructions:' followed by 
                            the enhanced prompt."""
                            

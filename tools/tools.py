@@ -1,7 +1,7 @@
 """Module for defining and managing external tools for the AI assistant."""
 from typing import List, Annotated, Optional
 from search_manager import SearchManager
-from agent_tools.fetch_latest_arxiv_papers import fetch_latest_arxiv_results
+from fetch_latest_arxiv_papers import fetch_latest_arxiv_papers
 from langchain.tools import tool
 from langchain_experimental.utilities import PythonREPL
 import signal

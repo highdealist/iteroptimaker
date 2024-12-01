@@ -1,6 +1,6 @@
 """Core Knowledge Extractor agent for coordinating agent interactions and knowledge extraction."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class CoreKnowledgeExtractorAgent(BaseAgent):
     """Agent specialized in coordinating agent interactions and extracting core knowledge."""

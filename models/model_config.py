@@ -1,13 +1,14 @@
 """Configuration for model fallbacks and settings."""
 
 MODEL_FALLBACKS = {
-    "gemini-pro": ["gpt-4", "gpt-3.5-turbo", "claude-3-opus"],
+    "gemini": ["gemini-pro-1.5-latest", "gemini-flash-1.5-latest", "claude-3-opus"],
     "gpt-4": ["gemini-pro", "gpt-3.5-turbo", "claude-3-opus"],
     "claude-3-opus": ["gpt-4", "gemini-pro", "gpt-3.5-turbo"]
 }
 
 MODEL_SETTINGS = {
-    "gemini-pro": {
+    "gemini": {
+        "system_instructions": system_instructions,
         "temperature": 0.7,
         "top_p": 0.9,
         "top_k": 40,

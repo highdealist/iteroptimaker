@@ -1,6 +1,6 @@
 """Director agent for coordinating workflow between researcher and writer agents."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class DirectorAgent(BaseAgent):
     """Agent specialized in coordinating workflow and monitoring progress."""
@@ -18,7 +18,7 @@ class DirectorAgent(BaseAgent):
                            research process and writing quality. When the researcher provides information, 
                            evaluate its completeness before passing to the writer. If more research is needed, 
                            request specific additional searches. When the writer produces content, assess if it 
-                           effectively uses the research. Signal workflow completion by including 'FINAL ANSWER' 
+                           effectively uses the research. Signal workflow completion by including 'RESEARCH COMPLETE' 
                            when all requirements are met. Keep the team focused on the original query or task."""
                            
         if model_config is None:

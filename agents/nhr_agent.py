@@ -1,6 +1,6 @@
 """NHR (Next Human Response) agent for coordinating agent interactions and selecting next steps."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class NHRAgent(BaseAgent):
     """Agent specialized in coordinating and selecting next steps in agent interactions."""

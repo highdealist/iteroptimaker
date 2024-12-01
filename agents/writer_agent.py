@@ -1,6 +1,6 @@
 """Writer agent for generating and revising content."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class WriterAgent(BaseAgent):
     """Agent specialized in writing and revising content."""

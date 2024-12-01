@@ -1,7 +1,7 @@
 """Researcher agent implementation."""
 import re
 from typing import Dict, Any, List
-from .base_agent import BaseAgent
+from agent import BaseAgent
 
 class ResearcherAgent(BaseAgent):
     """Agent specialized in research tasks using search and analysis tools."""

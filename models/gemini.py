@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import google.generativeai as genai
 import logging
 from .base.model import BaseModel
-from config.model_config import (
+from models.model_config import (
     GEMINI_API_KEY,
     SAFETY_SETTINGS,
     GEMINI_PRO_MODEL,

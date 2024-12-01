@@ -2,7 +2,7 @@
 Model manager for creating and managing different language models.
 """
 from typing import Dict, Any, Optional
-from .base.model import BaseModel
+from model import BaseModel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,9 @@ class ModelManager:
         
     def _initialize_model_classes(self):
         """Initialize model classes lazily to avoid circular imports."""
-        from .providers.gemini import GeminiModel
-        from .providers.openai import OpenAIModel
-        from ..config.model_config import MODEL_FALLBACKS, MODEL_SETTINGS
+        from gemini import GeminiModel
+        from openai import OpenAIModel
+        from .model_config import MODEL_FALLBACKS, MODEL_SETTINGS
         
         self._model_classes = {
             "gemini": GeminiModel,

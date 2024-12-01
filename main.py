@@ -19,7 +19,7 @@ from config import (
     LLM_PROVIDER,
     GEMINI_PRO_MODEL
 )
-from models.providers import OpenAIProvider, GeminiProvider
+from models import OpenAIProvider, GeminiProvider
 import tools.read_document
 
 logger = logging.getLogger(__name__)

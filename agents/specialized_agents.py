@@ -2,9 +2,9 @@
 Specialized agent implementations for different roles in the system.
 """
 from typing import Dict, Any, List
-from .agent import BaseAgent
-from ...models.model_manager import ModelManager
-from ...tools.tool_manager import ToolManager
+from agent import BaseAgent
+from ..models.model_manager import ModelManager
+from ..tools.tool_manager import ToolManager
 
 class DeveloperAgent(BaseAgent):
     """Agent responsible for implementing features and fixing bugs."""

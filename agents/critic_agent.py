@@ -1,6 +1,6 @@
 """Critic agent for providing constructive feedback and analysis."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from agent import BaseAgent
 
 class CriticAgent(BaseAgent):
     """Agent specialized in providing constructive criticism and feedback."""

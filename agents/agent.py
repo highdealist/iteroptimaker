@@ -6,6 +6,9 @@ from typing import Dict, Any, List, Optional
 import re
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
+model_manager = ModelManager()
+tool_manager = ToolManager()
+
 
 class BaseAgent(ABC):
     """Abstract base class for all agents in the system."""
@@ -487,4 +490,4 @@ Important:
 
 
 #Example of how to use this class
-# agent = BaseAgent(model_manager, tool_manager, "assistant", "Your instructions here", ["tool1", "tool2"], {"temperature": 0.7, "top_p": 0.9, "top_k": 50, "max_output_tokens": 32000})
+agent = BaseAgent(model_manager, tool_manager, "assistant", "Your instructions here", ["tool1", "tool2"], {"temperature": 0.7, "top_p": 0.9, "top_k": 50, "max_output_tokens": 32000})
