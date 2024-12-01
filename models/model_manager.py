@@ -2,7 +2,7 @@
 Model manager for creating and managing different language models.
 """
 from typing import Dict, Any, Optional
-from model import BaseModel
+from models.model import BaseModel
 import logging
 
 logger = logging.getLogger(__name__)
