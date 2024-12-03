@@ -322,7 +322,7 @@ Your task is to build comprehensive understanding through iterative research whi
                 self.model_manager,
                 self.tool_manager,
                 instruction=self.system_prompt,
-                tools=["web_search"],
+                tools=["web_search", "foia_search", "search_arxiv"],
                 model_config={
                     "temperature": 0.7,
                     "max_tokens": 2048,

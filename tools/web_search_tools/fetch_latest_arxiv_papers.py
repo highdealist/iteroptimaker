@@ -16,7 +16,7 @@ def fetch_latest_arxiv_papers(topic: str) -> list:
         A list of dictionaries containing the title, authors, summary and
         published date of each paper.
     """
-    url = f'http://export.arxiv.org/api/query?search_query=all:{topic}&start=0&max_results=5&sortBy=submittedDate&sortOrder=descending'
+    url = f'http://export.arxiv.org/api/query?search_query=all:{topic}&start=0&max_results=11lan&sortBy=submittedDate&sortOrder=descending'
     response = requests.get(url)
     feed = feedparser.parse(response.content)
 
