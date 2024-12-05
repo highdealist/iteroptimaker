@@ -1,5 +1,7 @@
 .aider*
+*aider*
 .env
+.venv/
 __pycache__/
 .gitignore
 .pytest_cache/

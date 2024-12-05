@@ -11,7 +11,7 @@ from agents.agent_factory import AgentFactory, AgentConfig
 from tools.tool_manager import ToolManager
 from models.model_manager import ModelManager
 from agents.agent import Agent
-from tools.search_manager import SearchManager, initialize_search_manager
+from tools.web_search_tools.search_manager import SearchManager, initialize_search_manager
 from gui.app import App
 from config import (
     GEMINI_API_KEY,
