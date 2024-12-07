@@ -1,6 +1,11 @@
 {
     "scm.alwaysShowRepositories": true,
     "editor.wordWrap": "on",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "",
+    "editor.experimentalInlineEdit.enabled": true,
     "files.exclude": {
         "__pycache__/": true,
         "**Scripts/": true,
@@ -15,11 +20,5 @@
         "**/.idea/": true,
         "**/.pytest_cache/": true,
         "**/.mypy_cache/": true,
-        "**/.aider*/": true,
-        ".*": true,
     },
-    "editor.autoIndent": "advanced",
-    "editor.defaultFormatter": "ms-python.debugpy",
-    "editor.experimentalInlineEdit.enabled": true,
-    "editor.formatOnPaste": true
 }
