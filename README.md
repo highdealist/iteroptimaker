@@ -1,76 +1,665 @@
-# Workflows
+# Creative AI Writer Application - Technical Documentation
 
+### Overview
 
-ROBOCODERS.AI
+This application empowers creative writers by integrating Large Language Models (LLMs) with a dynamic, agent-based architecture. It streamlines the writing process by facilitating research, managing workflows, and offering flexibility in model selection and tool utilization. The application features a user-friendly interface built with Tkinter, enabling seamless interaction and control over the creative process.
 
-I uploaded the following files:
+Features and Functionalities
+Interactive GUI (Tkinter): The GUI provides a central hub for user interaction. Key features include:
 
-* /home/user/CODEBASE.py
+```
+Prompt Input: Users enter writing prompts and instructions.
+```
+
+Content Display: Generated text and research findings are displayed.
+
+Agent Selection: Users can choose between different agents (Researcher, Writer, etc.).
+
+Model Selection: Users can select their preferred LLM.
+
+Tool Management: Access and configure available tools.
+
+File Management: Save and load writing projects.
+
+Agent-Based Workflow: The application utilizes an agent-based architecture to perform specialized tasks. The core agents are:
+
+Researcher Agent: Gathers information relevant to the user's prompt using various tools, including web search, arXiv paper retrieval, and potentially FOIA requests.
+
+Writer Agent: Generates creative content based on the research provided by the Researcher Agent and the user's instructions. Utilizes formatting and visualization tools to enhance the output.
+
+Dynamic Tool Invocation: Agents dynamically select and utilize tools based on the context and user input. The ToolManager handles tool registration and execution. Available tools include:
+
+web_search: Performs web searches across multiple search engines (Google, Brave, DuckDuckGo) using the SearchManager.
+
+fetch_recent_arxiv_papers: Retrieves relevant research papers from arXiv.
+
+foia_search: Searches FOIA.gov for government documents (implementation details to be finalized).
+
+python_repl: Executes Python code for data manipulation, analysis, and visualization.
+
+read_document: Processes and extracts information from uploaded documents.
+
+fetch_comments: Retrieves comments from YouTube videos (implementation details to be finalized).
+
+Flexible Model Selection: The ModelManager allows users to select and configure different LLMs, including OpenAI, Gemini, and Ollama. This flexibility enables experimentation and optimization for various writing styles and tasks.
+
+Web Search Integration: The SearchManager handles web searches across multiple providers, incorporating caching to improve performance and reduce API usage.
+
+Extensible Agent Framework: The AgentManager and AgentFactory facilitate the creation and management of new agents with custom instructions, tools, and models. Agent configurations are loaded from agents.json.
+
+Workflow Management (LangGraph): Workflows define sequences of actions performed by agents and tools. LangGraph is used to define and manage these workflows, providing a flexible and visual way to orchestrate complex writing processes. Workflows are stored in workflows.json.
+
+Technical Overview
+Architecture Diagram
++-----------------+     +------------+     +----------+     +------------+
+|       GUI       |---->|  Agents   |---->|  Models  |---->|   Tools   |
++-----------------+     +------------+     +----------+     +------------+
+      ^                    ^                    ^
+      |                    |                    |
+      +--------------------+--------------------+--------------------+
+                           |
+                           v
+                     +------------+
+                     | Search Mgr |
+                     +------------+
+                           |
+                           v
+                     +------------+
+                     | Workflows  |
+                     +------------+
+                           |
+                           v
+                     +------------+
+                     |  Config    |
+                     +------------+
+                           |
+                           v
+                     +------------+
+                     | Utilities  |
+                     +------------+
+Use code with caution.
+Software Dependencies
+GUI: Tkinter
+
+LLM Integration: google.generativeai (Gemini), openai, ollama
+
+Web Scraping/Content Extraction: newspaper3k, beautifulsoup4, requests, selenium, playwright (optional, for dynamic content)
+
+Agent/Workflow Management: langchain, langgraph
+
+Other Utilities: json, logging, os, dotenv (for API key management)
+
+Codebase Structure
+creative_ai_writer/
+├── gui/
+│   ├── app.py        # Main Tkinter application
+│   ├── widgets.py    # Custom Tkinter widgets
+│   └── ...
+├── agents/
+│   ├── researcher_agent.py
+│   ├── writer_agent.py
+│   ├── agent_manager.py
+│   ├── agent_factory.py
+│   └── ...
+├── models/
+│   ├── model_manager.py
+│   ├── model_factory.py
+│   ├── openai_wrapper.py
+│   ├── gemini_wrapper.py
+│   ├── ollama_wrapper.py
+│   └── ...
+├── tools/
+│   ├── web_search.py
+│   ├── arxiv_fetcher.py
+│   ├── foia_search.py
+│   ├── python_repl.py
+│   ├── read_document.py
+│   ├── fetch_comments.py
+│   ├── tool_manager.py
+│   └── ...
+├── search_manager/
+│   ├── search_manager.py
+│   ├── google_search.py
+│   ├── brave_search.py
+│   ├── duckduckgo_search.py
+│   └── ...
+├── workflows/
+│   ├── workflow_manager.py
+│   └── ...
+├── config/
+│   ├── config.py
+│   └── ...
+├── utils/
+│   ├── logging.py
+│   ├── error_handling.py
+│   └── ...
+├── agents.json        # Agent configurations
+├── workflows.json     # Workflow definitions
+├── .env              # Environment variables (API keys)
+└── main.py           # Application entry point
+Use code with caution.
+Modules and Logic (Pseudocode)
+agents/researcher_agent.py:
+
+class ResearcherAgent:
+  def __init__(self, model, tools):
+    self.model = model  # LLM instance
+    self.tools = tools  # List of available tools
+
+  def research(self, query):
+    # Construct prompt for the LLM, including available tools
+    prompt = f"Research the following: {query}.  Available tools: {self.tools}"
+
+    # Get LLM response, which may include tool calls
+    response = self.model.generate(prompt)
+
+    # Execute tool calls and integrate results
+    final_research = self.execute_tools(response)
+    return final_research
+
+  def execute_tools(self, llm_response):
+    # Parse LLM response to identify and extract tool calls and arguments
+    tool_calls = parse_tool_calls(llm_response)
+
+    # Execute each tool call
+    for tool_name, arguments in tool_calls.items():
+      tool = self.tools.get(tool_name) # Get tool instance
+      if tool:
+        result = tool.execute(**arguments)
+        # Replace tool call in the response with the tool's result
+        llm_response = llm_response.replace(tool_call_string, result)
+    return llm_response
+Use code with caution.
+Pseudocode
+agents/writer_agent.py:
+
+class WriterAgent:
+    def __init__(self, model, tools):
+        self.model = model
+        self.tools = tools
+
+    def write(self, research, instructions):
+        prompt = f"Write based on the following research: {research}\nInstructions: {instructions}"
+        response = self.model.generate(prompt)
+        # Similar tool execution logic as in ResearcherAgent
+        final_text = self.execute_tools(response)
+        return final_text
+Use code with caution.
+Pseudocode
+models/model_manager.py:
+
+class ModelManager:
+    def __init__(self):
+        self.models = {}  # Dictionary to store loaded models
+
+    def load_model(self, model_name, provider, api_key=None):
+        if model_name not in self.models:
+            if provider == "openai":
+                model = OpenAIWrapper(api_key, model_name)
+            elif provider == "gemini":
+                model = GeminiWrapper(api_key, model_name)
+            elif provider == "ollama":
+                model = OllamaWrapper(model_name)
+            # ... handle other providers
+            self.models[model_name] = model
+        return self.models[model_name]
+
+    def get_model(self, model_name):
+        return self.models.get(model_name)
+Use code with caution.
+Pseudocode
+tools/tool_manager.py:
+
+class ToolManager:
+    def __init__(self):
+        self.tools = {}
+
+    def register_tool(self, name, tool_function):
+        self.tools[name] = tool_function
+
+    def execute_tool(self, name, arguments):
+        tool = self.tools.get(name)
+        if tool:
+            return tool(**arguments)
+        else:
+            raise ToolNotFoundError(f"Tool '{name}' not found.")
+Use code with caution.
+Pseudocode
+workflows/workflow_manager.py:
+
+class WorkflowManager:
+    def execute_workflow(self, workflow_name, input_data):
+        workflow = load_workflow_from_json(workflow_name, workflows.json)
+        # Use LangGraph to execute the workflow defined in the JSON
+        # ... (LangGraph execution logic)
+Use code with caution.
+Pseudocode
+Technical Considerations
+Scalability: The agent-based architecture can be scaled horizontally by adding more agent instances.
+
+Security: API keys should be stored securely using environment variables and the .env file. Input validation is crucial to prevent injection attacks.
+
+Performance: Caching in the SearchManager and asynchronous operations can improve responsiveness.
+
+Error Handling: Implement robust error handling and logging throughout the application.
+
+Maintainability: Adhere to coding standards, provide clear documentation, and use a modular design.
+
+Additional Notes for Software Engineers
+Tool Selection Logic: The agent's tool selection logic should be carefully designed. Consider using LLMs to suggest tools based on the context or implementing rule-based systems.
+
+Asynchronous Operations: Use asynchronous programming (e.g., asyncio) for I/O-bound operations like web requests to improve performance.
+
+Unit Testing: Thorough unit testing is essential for each module to ensure code quality and reliability.
+
+User Interface Design: The GUI should be intuitive and easy to use, providing clear feedback to the user.
+
+Documentation: Maintain comprehensive documentation for all modules and APIs.
+
+This detailed technical write-up provides a solid foundation for developing the Creative AI Writer application. It outlines the key features, architecture, and implementation details, enabling software engineers to effectively build and maintain the application. Remember to prioritize code quality, security, and user experience throughout the development process.
+
+User
+Write a README file for each core module to specify and elucidate how each one works.   Begin with the models module only and wait for my response to continue with the next module.
 
 Model
-6.0s
-Extracted Knowledge and Information from Logs
-The logs provide valuable insights into the structure and functionality of the Python application, as well as the debugging process. Here's a breakdown of the key information:
 
-1. Application Structure:
+# models Module README
+
+This module manages the interaction with various Large Language Models (LLMs), providing a unified interface for accessing different providers like OpenAI, Gemini, and Ollama.  It abstracts away the complexities of interacting with each provider's API, allowing the rest of the application to seamlessly switch between models and providers.
+
+## Core Components
+
+* **`model_manager.py`:**  The central component of this module.  It handles loading, caching, and retrieving LLM instances.  It acts as a factory and registry for available models.
+* **`model_factory.py`:**  (Optional) Can be used to further abstract the model creation process, especially if more complex initialization logic is required in the future.  Currently, the `ModelManager` handles these responsibilities.
+* **Provider-Specific Wrappers:**  Files like `openai_wrapper.py`, `gemini_wrapper.py`, and `ollama_wrapper.py` encapsulate the logic for interacting with each LLM provider's API.  These wrappers provide a consistent interface regardless of the underlying provider.
+
+## Usage
+
+1. **Loading a Model:**
+
+   ```python
+   from models.model_manager import ModelManager
+
+   manager = ModelManager()
+   openai_model = manager.load_model("gpt-3.5-turbo", "openai", api_key="YOUR_OPENAI_API_KEY")
+   gemini_model = manager.load_model("gemini-pro", "gemini", api_key="YOUR_GEMINI_API_KEY")
+   ollama_model = manager.load_model("llama2", "ollama")  # No API key needed for local Ollama models
+   ```
+
+Use code with caution.
+Markdown
+Retrieving a Loaded Model:
+
+model = manager.get_model("gpt-3.5-turbo")
+if model:
+    response = model.generate("Your prompt here")
+    # Process the response
+Use code with caution.
+Python
+Generating Text:
+
+Each model wrapper provides a generate() method (or similar) that takes a prompt as input and returns the generated text. The exact method signature might vary slightly depending on the provider, but the core functionality remains the same. For example:
+
+response = openai_model.generate("Tell me a story about a cat.")
+print(response)
+Use code with caution.
+Python
+Implementation Details
+Model Caching: The ModelManager caches loaded models to avoid redundant initialization and improve performance. When a model is requested, the manager first checks if it's already cached. If so, it returns the cached instance; otherwise, it creates a new instance and caches it.
+
+Provider-Specific Wrappers: Each wrapper handles the specifics of interacting with its respective provider's API, including authentication, request formatting, and response parsing. This abstraction simplifies the usage of different LLMs within the application.
+
+Error Handling: The wrappers should implement robust error handling to gracefully manage API errors, timeouts, and other potential issues.
+
+Future Enhancements
+Dynamic Model Loading: Explore the possibility of loading models on demand based on user selection or workflow requirements.
+
+Model Evaluation Metrics: Integrate metrics to track model performance and potentially select the best model for a given task.
+
+Support for More Providers: Add support for other LLM providers as needed.
+
+This README provides a comprehensive overview of the models module, explaining its functionality, usage, and implementation details. It serves as a valuable resource for developers working with this module.
+
+Let me know when you're ready for the next module's README.
+Use code with caution.
+
+User
+Good, now write the README for agents' module.
+
+Model
+
+# agents Module README
+
+This module defines the core agents that drive the application's functionality, primarily the `ResearcherAgent` and the `WriterAgent`.  It also includes the `AgentManager` and `AgentFactory` for managing and creating agent instances.
+
+## Core Components
+
+* **`researcher_agent.py`:** Defines the `ResearcherAgent` class. This agent specializes in gathering information related to a user's query using various tools.
+* **`writer_agent.py`:** Defines the `WriterAgent` class. This agent takes the research gathered by the `ResearcherAgent` and generates creative content based on user instructions.
+* **`agent_manager.py`:**  Manages the lifecycle of agents, including creation, loading (from configuration), saving, and deletion.
+* **`agent_factory.py`:**  Provides a factory pattern for creating agent instances. This simplifies the creation process and allows for easier extension with new agent types in the future.
+
+## Usage
+
+1. **Creating Agents:**
+
+   ```python
+   from agents.researcher_agent import ResearcherAgent
+   from agents.writer_agent import WriterAgent
+   from models.model_manager import ModelManager  # Assuming you have models loaded
+   from tools.tool_manager import ToolManager    # Assuming you have tools registered
+
+   model_manager = ModelManager()
+   tool_manager = ToolManager()
+
+   researcher_model = model_manager.get_model("your_researcher_model")
+   writer_model = model_manager.get_model("your_writer_model")
+
+   researcher_agent = ResearcherAgent(researcher_model, tool_manager)
+   writer_agent = WriterAgent(writer_model, tool_manager)
+   ```
+
+Use code with caution.
+Markdown
+Using Agents:
+
+user_query = "Write a short story about a robot learning to love."
+research = researcher_agent.research(user_query)
+story = writer_agent.write(research, "Focus on the emotional development of the robot.")
+print(story)
+Use code with caution.
+Python
+Agent Manager (Example):
+
+from agents.agent_manager import AgentManager
+
+agent_manager = AgentManager()
+agent_config = {
+    "name": "my_researcher",
+    "model": "gpt-3.5-turbo",
+    "tools": ["web_search", "arxiv_fetcher"]
+}
+agent_manager.create_agent(agent_config)  # Creates and registers the agent
+loaded_agent = agent_manager.get_agent("my_researcher")
+
+# ... use loaded_agent
+
+Use code with caution.
+Python
+Implementation Details
+Tool Integration: Both ResearcherAgent and WriterAgent can utilize tools. They parse the LLM output for tool calls, extract arguments, and execute the tools using the ToolManager.
+
+Dynamic Tool Selection (Future): Currently, tool selection is implicit based on the LLM's output. Future enhancements could include more explicit tool selection mechanisms, either through LLM prompting or rule-based systems.
+
+Agent Configuration: Agent configurations (model, tools, etc.) can be loaded from JSON files using the AgentManager, promoting flexibility and maintainability.
+
+Error Handling: Agents should implement error handling to gracefully manage issues like tool execution failures or LLM API errors.
+
+Future Enhancements
+More Specialized Agents: Create additional agents for specific tasks, such as fact-checking, style analysis, or plagiarism detection.
+
+Improved Tool Selection: Implement more sophisticated tool selection mechanisms.
+
+Agent Collaboration: Enable agents to collaborate and exchange information.
+
+Agent Training/Fine-tuning: Explore the possibility of training or fine-tuning agents for specific writing styles or genres.
+
+This README provides a detailed overview of the agents module, its components, and how to use them. It serves as a guide for developers working on or integrating with this module.
+
+Ready for the next module? Let me know which one.
+Use code with caution.
+
+User
+Now, for tools.
+
+Model
+18.4s
+
+# tools Module README
+
+This module defines and manages the various tools available to the agents within the application.  These tools extend the capabilities of the LLMs by providing access to external resources and functionalities.
+
+## Core Components
+
+* **`tool_manager.py`:** The central component for registering, managing, and executing tools.
+* **Individual Tool Files:** Each tool is defined in its own file (e.g., `web_search.py`, `arxiv_fetcher.py`, `python_repl.py`).  This promotes modularity and maintainability.
+
+## Usage
+
+1. **Registering Tools:**
+
+   ```python
+   from tools.tool_manager import ToolManager
+   from tools.web_search import web_search  # Import your tool functions
+
+   tool_manager = ToolManager()
+   tool_manager.register_tool("web_search", web_search) # Register the tool function
+   # Register other tools similarly...
+   ```
+
+Use code with caution.
+Markdown
+Executing Tools (from within an agent):
+
+# ... inside ResearcherAgent or WriterAgent ...
+
+tool_name = "web_search"
+arguments = {"query": "best nacho recipes", "num_results": 3}
+results = self.tools.execute_tool(tool_name, arguments)  # Assuming 'self.tools' is a ToolManager instance
+
+# Process the results
+
+Use code with caution.
+Python
+Defining a New Tool:
+
+Create a new Python file (e.g., my_new_tool.py) and define your tool function. Make sure it takes clearly defined inputs and returns a structured output (string, dictionary, list, etc.). Then, register the tool with the ToolManager as shown above.
+
+# my_new_tool.py
+
+def my_new_tool(arg1: str, arg2: int) -> dict:
+    """This tool does something amazing."""
+    # ... your tool logic ...
+    return {"result": "some value", "status": "success"}
+Use code with caution.
+Python
+Implementation Details
+Tool Functions: Each tool is implemented as a Python function. These functions should be well-documented, specifying their inputs, outputs, and functionality.
+
+Tool Registration: The ToolManager maintains a registry of available tools. Agents use the tool name to access and execute the corresponding tool function.
+
+Tool Arguments: Tools can accept arguments as keyword arguments (**kwargs). This provides flexibility in passing different parameters to the tools.
+
+Error Handling: Tool functions should implement error handling to gracefully manage potential issues (e.g., network errors, invalid input).
+
+Example Tool Implementation (web_search.py)
+from search_manager import SearchManager  # Import your SearchManager
+
+search_manager = SearchManager() # Initialize it (potentially with API keys, etc.)
+
+def web_search(query: str, num_results: int = 5) -> list:
+    """Performs a web search and returns the top results."""
+    results = search_manager.search(query, num_results)
+    return results
+Use code with caution.
+Python
+Future Enhancements
+Tool Discovery: Implement a mechanism for agents to dynamically discover available tools.
+
+Tool Input Validation: Add input validation to tool functions to ensure data integrity.
+
+Asynchronous Tool Execution: Explore asynchronous execution for long-running tools to avoid blocking the main thread.
+
+Standardized Tool Output: Define a standard output format for tools to simplify processing by agents.
+
+This README provides a comprehensive guide to the tools module, its structure, and how to use and extend it. It serves as a valuable resource for developers working with this part of the application.
+
+Ready for the next one?
+Use code with caution.
+
+User
+Now tie it all together in a README for the workflows (as state graphs / langgraphs) module.  This should be the longest README.
+
+Model
+29.6s
+
+# workflows Module README
+
+This module manages the definition and execution of workflows, which orchestrate the interaction between agents and tools to accomplish specific writing tasks.  Workflows are defined as state graphs using the `langgraph` library, providing a flexible and visual way to represent complex processes.
+
+## Core Components
+
+* **`workflow_manager.py`:**  The central component for loading, managing, and executing workflows.
+* **`workflow_definition.py`:** (Optional) Can contain helper classes or functions for defining workflows, although workflows are primarily defined in JSON files.
+
+## Usage
+
+1. **Defining a Workflow (in `workflows.json`):**
+
+   Workflows are defined in JSON format, specifying the nodes (agents or tools) and the edges (transitions between nodes).  Here's an example:
+
+   ```json
+   {
+     "creative_writing": {
+       "description": "A workflow for creative writing.",
+       "nodes": [
+         {"agent": "researcher", "model": "gpt-3.5-turbo", "tools": ["web_search"]},
+         {"agent": "writer", "model": "gemini-pro", "tools": ["python_repl"]},
+         {"tool": "read_document"} 
+       ],
+       "edges": [
+         ["researcher", "writer"],
+         ["read_document", "researcher"] // optional document input to researcher
+       ],
+       "initial_input": ["user_prompt"] // Input keys from initial user input
+     },
+     "code_review": {
+       "description": "A workflow for reviewing code.",
+       "nodes": [
+         // ... other agents and tools ...
+       ],
+       "edges": [
+         // ... connections ...
+       ],
+        "initial_input": ["code_to_review"]
+     }
+   }
+   ```
+
+Use code with caution.
+Markdown
+Executing a Workflow:
+
+from workflows.workflow_manager import WorkflowManager
+from models.model_manager import ModelManager
+from tools.tool_manager import ToolManager
+from agents.agent_manager import AgentManager
+
+# Initialize managers
+
+model_manager = ModelManager()
+tool_manager = ToolManager()
+agent_manager = AgentManager("agents.json") # Load agents from config
+workflow_manager = WorkflowManager(model_manager, tool_manager, agent_manager)
+
+user_input = {"user_prompt": "Write a poem about the ocean.", "code_to_review": "..."} # Example user input
+results = workflow_manager.execute_workflow("creative_writing", user_input)
+print(results)
+Use code with caution.
+Python
+Implementation Details
+WorkflowManager: The WorkflowManager loads workflow definitions from the workflows.json file. It then uses langgraph to create and execute the workflow graph. It's responsible for:
+
+Instantiating agents and tools.
+
+Managing the flow of data between nodes.
+
+Handling the execution of each node.
+
+Returning the final output of the workflow.
+
+LangGraph Integration: langgraph provides the core functionality for defining and executing state graphs. The WorkflowManager interacts with langgraph to manage the workflow execution.
+
+Data Flow: Data is passed between nodes in the workflow graph according to the defined edges. The output of one node becomes the input to the next.
+
+Workflow Definition (JSON): The workflows.json file defines the structure of each workflow. This allows for easy modification and creation of new workflows without changing code. The JSON structure should be clearly defined and documented.
+
+Example Workflow Implementation (Conceptual - using langgraph)
+
+# Example of how a workflow might be represented and executed using langgraph (simplified)
+
+from langgraph import StateGraph
+
+# Define states and transitions (this would be loaded from JSON)
+
+graph = StateGraph()
+
+# Add nodes (agents or tools)
+
+graph.add_node("researcher", researcher_agent.research)  # Assuming researcher_agent is defined
+graph.add_node("writer", writer_agent.write)
+
+# ... add other nodes
+
+# Define edges (transitions)
+
+graph.add_edge("researcher", "writer")
+
+# ... add other edges
+
+# Execute the workflow
+
+initial_state = {"user_prompt": "Write a poem about the ocean."}
+final_state = graph.execute(initial_state)
+poem = final_state["output_text"]  # Assuming the writer agent outputs "output_text"
+print(poem)
+Use code with caution.
+Python
+Advanced Workflow Features (Future Considerations)
+Conditional Transitions: Implement conditional transitions based on the output of a node. For example, if the research agent finds no relevant information, the workflow could branch to a different path.
+
+Loops and Iterations: Allow for loops and iterations within the workflow. For example, the writer agent could generate multiple drafts, and the workflow could loop back to a review stage.
+
+Dynamic Workflow Generation: Explore the possibility of dynamically generating workflows based on user input or other criteria.
+
+Visual Workflow Editor (in GUI): A visual editor in the GUI would allow users to create and modify workflows graphically, simplifying the workflow management process.
+
+Future Enhancements
+Improved Error Handling: Implement more robust error handling within the workflow execution process.
+
+Workflow Versioning: Implement version control for workflows to track changes and revert to previous versions.
+
+Workflow Libraries: Allow users to create and share libraries of reusable workflows.
+
+Real-time Workflow Monitoring: Provide real-time feedback to the user on the progress of workflow execution.
+
+This README provides a comprehensive guide to the workflows module, including how to define, execute, and extend workflows using langgraph. It serves as a valuable resource for developers working with this crucial part of the application. The focus on state graphs and JSON configuration makes the system highly adaptable and extensible.
+
+This expanded README provides significantly more detail and context for the `workflows` module, especially regarding the use of `langgraph` and the JSON configuration for defining workflows. It also includes more advanced concepts and future enhancements.  Let me know if you have any other questions.
+
+# Application Structure:
 
 Multi-Agent Conversation System: The application is designed to be a conversational system with multiple agents (Creative Writer, Code Generator, Image Analyzer).
-
 Langgraph Workflow: The system uses Langgraph to define and manage the workflow of the agents.
-
 Tools: The system utilizes tools like TavilySearchResults (for web search) and PythonREPLTool (for code execution).
-
 Gemini API: The application interacts with Google's Gemini API for text generation and image analysis.
-
 User Input: The system accepts user input to trigger agent interactions.
-
 Agent Selection: The system can either auto-select an agent based on the input or allow the user to choose an agent.
 
-1. Dependencies:
+# Dependencies:
 
 langchain: For language model interaction and tool integration.
-
 langchain-community: For specific tools like TavilySearchResults.
-
 langchain-experimental: For experimental features and tools.
-
 pydantic: For data validation and model definition.
-
 python-dotenv: For loading environment variables from a .env file.
-
 google-generativeai: For interacting with Google's Gemini API.
-
 langgraph: For defining and managing the workflow of the agents.
-
 tavily-python: For interacting with the Tavily API.
 
-1. Debugging Process:
+# Code Snippets:
 
-Import Error: The initial issue was an import error related to the langchain_community module. This was resolved by installing the missing dependencies using pip install --user langchain langchain-community langchain-experimental pydantic python-dotenv google-generativeai langgraph tavily-python.
-
-Environment Variables: The application relies on environment variables like GOOGLE_API_KEY and TAVILY_API_KEY. The logs highlight the need to set these variables correctly.
-
-API Key Handling: The code was modified to handle cases where the API keys are not set, providing warnings and fallback options.
-
-Timeout Issues: The application experienced timeout issues during execution. This was addressed by adding timeouts and breaking the execution into smaller steps to identify the specific part of the code causing the issue.
-
-Predefined Input: The application was modified to use a predefined input string for testing purposes, allowing for easier debugging.
-
-Logging: Extensive logging statements were added to track the program's progress and identify potential issues.
-
-1. Potential Improvements:
-
-Input Handling: The application currently uses a predefined input for testing. To make it interactive, the input handling needs to be modified to accept user input from a file or through a more robust mechanism.
-
-Error Handling: The code could be further improved by adding more comprehensive error handling to gracefully handle unexpected situations.
-
-Performance Optimization: The application might benefit from performance optimization techniques to reduce execution time and improve responsiveness.
-
-1. Code Snippets:
-
-The logs provide several code snippets that can be used to understand the application's functionality. These snippets include:
-
-Setting up tools:
+## Setting up tools:
 
 try:
 search_tool = TavilySearchResults(api_key=os.getenv("TAVILY_API_KEY", "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"), max_results=5)
@@ -80,9 +669,8 @@ logger.info("Tools set up successfully")
 except Exception as e:
 logger.error(f"Error setting up tools: {str(e)}")
 raise
-Use code with caution.
-Python
-Defining Langgraph workflow:
+
+## Defining Langgraph workflow:
 
 workflow = StateGraph(MessagesState)
 workflow.add_node("Creative Writer", creative_writing_node)
@@ -95,8 +683,6 @@ workflow.add_node("user_selection", user_driven_agent_selection)
 # ... add edges ...
 
 graph = workflow.compile()
-Use code with caution.
-Python
 Main interaction loop:
 
 def main():
@@ -117,8 +703,6 @@ except Exception as e:
 logger.error(f"An error occurred: {str(e)}")
 print(f"An error occurred: {str(e)}")
 print("Please try again.")
-Use code with caution.
-Python
 This information can be used to create a more robust and user-friendly Python application.
 
 User
@@ -159,9 +743,7 @@ def run_workflow(self, workflow_name: str, *args, **kwargs):
         print(f"Invalid workflow name: {workflow_name}")
 ```
 
-Use code with caution.
-Python
-Agents:
+# Agents:
 
 The agents directory contains agent definitions. These agents can be integrated into the main application by creating an AgentManager class in CODEBASE.py. This class would be responsible for managing the creation, loading, and updating of agents.
 
@@ -187,8 +769,6 @@ def create_agent(self, name: str, agent_type: str, instruction: str, tools: List
     return agent
 ```
 
-Use code with caution.
-Python
 Tools:
 
 The tools directory contains tool definitions. These tools can be integrated into the main application by creating a ToolManager class in CODEBASE.py. This class would be responsible for managing the registration and execution of tools.
@@ -210,8 +790,6 @@ def execute_tool(self, name: str, *args, **kwargs):
         print(f"Tool '{name}' not found.")
 ```
 
-Use code with caution.
-Python
 Models:
 
 The models directory contains model definitions. These models can be integrated into the main application by creating a ModelManager class in CODEBASE.py. This class would be responsible for managing the selection and configuration of models.
@@ -233,8 +811,6 @@ def get_model(self, name: str):
         print(f"Model '{name}' not found.")
 ```
 
-Use code with caution.
-Python
 2. Main Application Logic:
 
 The main application logic in CODEBASE.py would then be responsible for:
@@ -429,7 +1005,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             optional_args={"num_results": 10},
             required_deps=['search_manager']
         )
-      
+  
         # Register python_repl tool
         tool_manager.register_tool(
             name="python_repl",
@@ -438,7 +1014,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             required_args=["code"],
             optional_args={"timeout_seconds": 10, "max_output_length": 10000}
         )
-      
+  
         # Register read_document tool
         tool_manager.eregister_tool(
             name="read_document",
@@ -446,7 +1022,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             description="Read the content of a document file",
             required_args=["file_path"]
         )
-      
+  
 
         # Register fetch_latest_arxiv_results tool
         tool_manager.register_tool(
@@ -538,8 +1114,6 @@ raise
 
 if **name** == " **main** ":
 main()
-Use code with caution.
-Python
 1.2. WorkflowManager Class:
 
 # CODEBASE.py
@@ -569,8 +1143,6 @@ def run_workflow(self, workflow_name: str, *args, **kwargs):
         print(f"Invalid workflow name: {workflow_name}")
 ```
 
-Use code with caution.
-Python
 1.3. AgentManager Class:
 
 # CODEBASE.py
@@ -598,8 +1170,6 @@ def get_agent(self, name: str):
     return self.agents.get(name)
 ```
 
-Use code with caution.
-Python
 1.4. ToolManager Class:
 
 # CODEBASE.py
@@ -619,8 +1189,6 @@ def execute_tool(self, name: str, *args, **kwargs):
         print(f"Tool '{name}' not found.")
 ```
 
-Use code with caution.
-Python
 1.5. ModelManager Class:
 
 # CODEBASE.py
@@ -640,8 +1208,6 @@ def get_model(self, name: str):
         print(f"Model '{name}' not found.")
 ```
 
-Use code with caution.
-Python
 2. Main Application Logic:
 
 # CODEBASE.py
@@ -716,7 +1282,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             optional_args={"num_results": 10},
             required_deps=['search_manager']
         )
-      
+  
         # Register python_repl tool
         tool_manager.register_tool(
             name="python_repl",
@@ -725,7 +1291,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             required_args=["code"],
             optional_args={"timeout_seconds": 10, "max_output_length": 10000}
         )
-      
+  
         # Register read_document tool
         tool_manager.eregister_tool(
             name="read_document",
@@ -733,7 +1299,7 @@ def _initialize_tool_manager(self) -> ToolManager:
             description="Read the content of a document file",
             required_args=["file_path"]
         )
-      
+  
 
         # Register fetch_latest_arxiv_results tool
         tool_manager.register_tool(
@@ -787,8 +1353,6 @@ def _initialize_llm_provider(self):
 # ... (Existing code) ...
 ```
 
-Use code with caution.
-Python
 3. Comprehensive Documentation:
 
 3.1. Project Overview:
@@ -1419,7 +1983,7 @@ tree = ast.parse(code)
 analyzer = ast.NodeVisitor()
 analyzer.visit(tree)
 
-# Implement complexity analysis logic
+# Code Examples
 
 ```
 def suggest_improvements(self, code):
@@ -1744,7 +2308,7 @@ Implement a system to detect and report potential biases in the AI's outputs.
 </span><span>        biases </span><span class="token">=</span><span> self</span><span class="token">.</span><span>detect_bias</span><span class="token">(</span><span>text</span><span class="token">)</span><span>
 </span><span></span><span class="token">if</span><span></span><span class="token">not</span><span> biases</span><span class="token">:</span><span>
 </span><span></span><span class="token">return</span><span></span><span class="token">"No potential biases detected."</span><span>
-</span>      
+</span>  
 <span>        report </span><span class="token">=</span><span></span><span class="token">"Potential biases detected:\n"</span><span>
 </span><span></span><span class="token">for</span><span> category</span><span class="token">,</span><span> keywords </span><span class="token">in</span><span> biases</span><span class="token">.</span><span>items</span><span class="token">(</span><span class="token">)</span><span class="token">:</span><span>
 </span><span>            report </span><span class="token">+=</span><span></span><span class="token string-interpolation">f"- </span><span class="token string-interpolation">{</span><span class="token string-interpolation">category</span><span class="token string-interpolation">.</span><span class="token string-interpolation">capitalize</span><span class="token string-interpolation">(</span><span class="token string-interpolation">)</span><span class="token string-interpolation">}</span><span class="token string-interpolation">: </span><span class="token string-interpolation">{</span><span class="token string-interpolation">', '</span><span class="token string-interpolation">.</span><span class="token string-interpolation">join</span><span class="token string-interpolation">(</span><span class="token string-interpolation">keywords</span><span class="token string-interpolation">)</span><span class="token string-interpolation">}</span><span class="token string-interpolation">\n"</span><span>
@@ -2375,7 +2939,7 @@ Now that we have tests for our advanced features, let's implement them in our ma
 </span><span>        biases </span><span class="token">=</span><span> self</span><span class="token">.</span><span>detect_bias</span><span class="token">(</span><span>text</span><span class="token">)</span><span>
 </span><span></span><span class="token">if</span><span></span><span class="token">not</span><span> biases</span><span class="token">:</span><span>
 </span><span></span><span class="token">return</span><span></span><span class="token">"No potential biases detected."</span><span>
-</span>      
+</span>  
 <span>        report </span><span class="token">=</span><span></span><span class="token">"Potential biases detected:\n"</span><span>
 </span><span></span><span class="token">for</span><span> category</span><span class="token">,</span><span> keywords </span><span class="token">in</span><span> biases</span><span class="token">.</span><span>items</span><span class="token">(</span><span class="token">)</span><span class="token">:</span><span>
 </span><span>            report </span><span class="token">+=</span><span></span><span class="token string-interpolation">f"- </span><span class="token string-interpolation">{</span><span class="token string-interpolation">category</span><span class="token string-interpolation">.</span><span class="token string-interpolation">capitalize</span><span class="token string-interpolation">(</span><span class="token string-interpolation">)</span><span class="token string-interpolation">}</span><span class="token string-interpolation">: </span><span class="token string-interpolation">{</span><span class="token string-interpolation">', '</span><span class="token string-interpolation">.</span><span class="token string-interpolation">join</span><span class="token string-interpolation">(</span><span class="token string-interpolation">keywords</span><span class="token string-interpolation">)</span><span class="token string-interpolation">}</span><span class="token string-interpolation">\n"</span><span>
@@ -2438,7 +3002,7 @@ Now, let's update our main AIAssistantApp class to incorporate these new feature
 </span><span>        self</span><span class="token">.</span><span>tool_manager </span><span class="token">=</span><span> ToolManager</span><span class="token">(</span><span class="token">)</span><span>
 </span><span>        self</span><span class="token">.</span><span>agent_factory </span><span class="token">=</span><span> AgentFactory</span><span class="token">(</span><span>self</span><span class="token">.</span><span>model_manager</span><span class="token">,</span><span> self</span><span class="token">.</span><span>tool_manager</span><span class="token">)</span><span>
 </span><span>        self</span><span class="token">.</span><span>workflow_manager </span><span class="token">=</span><span> WorkflowManager</span><span class="token">(</span><span>self</span><span class="token">.</span><span>agent_factory</span><span class="token">)</span><span>
-</span>      
+</span>  
 <span></span><span class="token"># Initialize advanced features</span><span>
 </span><span>        self</span><span class="token">.</span><span>ner </span><span class="token">=</span><span> NamedEntityRecognizer</span><span class="token">(</span><span class="token">)</span><span>
 </span><span>        self</span><span class="token">.</span><span>summarizer </span><span class="token">=</span><span> TextSummarizer</span><span class="token">(</span><span class="token">)</span><span>

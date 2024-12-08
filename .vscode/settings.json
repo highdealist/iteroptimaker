@@ -21,4 +21,5 @@
         "**/.pytest_cache/": true,
         "**/.mypy_cache/": true,
     },
+    "DockerRun.DisableDockerrc": true,
 }
