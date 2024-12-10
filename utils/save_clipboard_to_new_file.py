@@ -55,7 +55,6 @@ default_file_path = os.path.join('.', filename)
 
 full_path = filedialog.asksaveasfilename(
     defaultextension=f".{file_type}",
-    initialfile=filename,  # This sets the default filename
     initialdir='.'  # Start in the current directory
 )
 
