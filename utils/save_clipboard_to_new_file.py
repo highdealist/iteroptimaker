@@ -9,52 +9,72 @@ import sys
 # Retrieve text from clipboard
 text = pyperclip.paste()
 
-# Identify if it's Python code
-is_python = re.search(r'self\.', text) or re.search(r'try:\s*.*\n.*except', text, re.DOTALL)
+# Define common file extensions
+extensions = {'.py', '.txt', '.md', '.js', '.html', '.cpp', '.java', '.cs', '.go', '.rb', '.swift', '.c', '.sh'}
 
-# Identify if it's a large document
-is_large_doc = len(text) > 1000
-
-# Identify if it's short text
-is_short_text = len(text) < 1000
-
-# Determine the type, prioritizing Python code, then large doc, then short text
-if is_python:
-    file_type = 'py'
-elif is_large_doc:
-    file_type = 'md'
-elif is_short_text:
-    file_type = 'txt'
-else:
-    file_type = 'txt'  # Default
-
-# If markdown, add headers for standalone single lines
-if file_type == 'md':
-    lines = text.split('\n')
-    for i in range(len(lines)):
-        line = lines[i].strip()
-        if not line or re.match(r'^\s*#', line):
-            continue
-        if not re.match(r'^\s*\w+', line):
-            lines[i] = '#' + lines[i]
-    text = '\n'.join(lines)
-
-# Extract the first non-import line for the filename (default)
+# Attempt to extract filename and extension from the first line
 lines = text.split('\n')
-for line in lines:
-    if not re.match(r'^\s*(from\s+.*\s+import|import)\b', line):
-        first_line = line.strip()
-        break
+first_line = lines[0].strip() if lines else ""
+match = re.search(r'([^\s.]+)\.(' + '|'.join(extensions) + r')$', first_line)
+if match:
+    filename = match.group(1)
+    file_type = match.group(2)
+    #Sanitize filename
+    filename = re.sub(r'[<>:"/\\|?*\n]+', '_', filename)
+    
+    # Create timestamp
+    timestamp = datetime.now().strftime("%m_%d_%y")
+
+    # Generate filename
+    default_filename = f"{filename}_{timestamp}.{file_type}"
+
 else:
-    first_line = "untitled"
+    # Identify if it's Python code
+    is_python = re.search(r'self\.', text) or re.search(r'try:\s*.*\n.*except', text, re.DOTALL)
 
-# Create timestamp
-timestamp = datetime.now().strftime("%m_%d_%y")
+    # Identify if it's a large document
+    is_large_doc = len(text) > 1000
 
-# Generate default filename
-default_filename = f"{first_line}_{timestamp}.{file_type}"
-# Sanitize default filename
-default_filename = re.sub(r'[<>:"/\\|?*\n]+', '_', default_filename)
+    # Identify if it's short text
+    is_short_text = len(text) < 1000
+
+    # Determine the type, prioritizing Python code, then large doc, then short text
+    if is_python:
+        file_type = 'py'
+    elif is_large_doc:
+        file_type = 'md'
+    elif is_short_text:
+        file_type = 'txt'
+    else:
+        file_type = 'txt'  # Default
+
+    # If markdown, add headers for standalone single lines
+    if file_type == 'md':
+        lines = text.split('\n')
+        for i in range(len(lines)):
+            line = lines[i].strip()
+            if not line or re.match(r'^\s*#', line):
+                continue
+            if not re.match(r'^\s*\w+', line):
+                lines[i] = '#' + lines[i]
+        text = '\n'.join(lines)
+
+    # Extract the first non-import line for the filename (default)
+    lines = text.split('\n')
+    for line in lines:
+        if not re.match(r'^\s*(from\s+.*\s+import|import)\b', line):
+            first_line = line.strip()
+            break
+    else:
+        first_line = "untitled"
+
+    # Create timestamp
+    timestamp = datetime.now().strftime("%m_%d_%y")
+
+    # Generate default filename
+    default_filename = f"{first_line}_{timestamp}.{file_type}"
+    # Sanitize default filename
+    default_filename = re.sub(r'[<>:"/\\|?*\n]+', '_', default_filename)
 
 
 # Prompt user for directory selection and filename
