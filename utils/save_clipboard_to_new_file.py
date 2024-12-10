@@ -46,18 +46,25 @@ else:
     filename = f"{first_line}_{datetime.now().strftime('%m_%d_%y')}.{file_type}"
     filename = re.sub(r'[<>:"/\\|?*\n]+', '_', filename)
 
-
-# Prompt user for directory selection
+# Prompt user for file selection with default filename
 root = tk.Tk()
 root.withdraw()  # Hides the root window
-dir_path = filedialog.askdirectory()
-if not dir_path:
-    dir_path = '.'  # Use current directory if user cancels
 
-# Construct the full file path
-full_path = os.path.join(dir_path, filename)
+# Construct default file path in the current directory
+default_file_path = os.path.join('.', filename)
+
+full_path = filedialog.asksaveasfilename(
+    defaultextension=f".{file_type}",
+    initialfile=filename,
+    initialdir='.'  # Start in the current directory
+)
+
+if not full_path:
+    sys.exit() # Exit if user cancels
+
 print(text)
 print("Save to file: " + full_path)
+
 # Save the file and handle exceptions
 try:
     with open(full_path, 'w', encoding='utf-8') as f:
@@ -67,8 +74,8 @@ try:
 except Exception as e:
     messagebox.showerror("Error", f"Failed to save file:\n{e}")
 
-
 def close_terminal():
-    if sys.platform == 'win32': os.system('taskkill /F /IM cmd.exe')
+    if sys.platform == 'win32':
+        os.system('taskkill /F /IM cmd.exe')
 
 close_terminal()
