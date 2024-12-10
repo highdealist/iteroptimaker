@@ -12,7 +12,7 @@ text = pyperclip.paste()
 # Try to extract filename with extension from the first line
 match = re.search(r"^(.*?)\.(\w+)$", text.splitlines()[0], re.IGNORECASE)
 if match:
-    filename = match.group(1) + "." + match.group(2)
+    filename = match.group(0) # Use the entire matched string as filename
     file_type = match.group(2)
 else:
     # Identify if it's Python code
