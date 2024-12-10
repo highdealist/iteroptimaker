@@ -3,8 +3,8 @@ import re
 from datetime import datetime
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
-import sys 
+from tkinter import filedialog, messagebox, simpledialog
+import sys
 
 # Retrieve text from clipboard
 text = pyperclip.paste()
@@ -39,7 +39,7 @@ if file_type == 'md':
             lines[i] = '#' + lines[i]
     text = '\n'.join(lines)
 
-# Extract the first non-import line for the filename
+# Extract the first non-import line for the filename (default)
 lines = text.split('\n')
 for line in lines:
     if not re.match(r'^\s*(from\s+.*\s+import|import)\b', line):
@@ -51,22 +51,27 @@ else:
 # Create timestamp
 timestamp = datetime.now().strftime("%m_%d_%y")
 
-# Generate filename
-filename = f"{first_line}_{timestamp}.{file_type}"
-# Sanitize filename
-filename = re.sub(r'[<>:"/\\|?*\n]+', '_', filename)
+# Generate default filename
+default_filename = f"{first_line}_{timestamp}.{file_type}"
+# Sanitize default filename
+default_filename = re.sub(r'[<>:"/\\|?*\n]+', '_', default_filename)
 
-# Prompt user for directory selection
+
+# Prompt user for directory selection and filename
 root = tk.Tk()
 root.withdraw()  # Hides the root window
 dir_path = filedialog.askdirectory()
 if not dir_path:
     dir_path = '.'  # Use current directory if user cancels
 
+# Get filename from user, using default if cancelled
+filename = simpledialog.askstring("Filename", "Enter filename (leave blank to use default):", initialvalue=default_filename)
+if not filename:
+    filename = default_filename
+
 # Construct the full file path
 full_path = os.path.join(dir_path, filename)
-print(text)
-print("Save to file: " + full_path)
+
 # Save the file and handle exceptions
 try:
     with open(full_path, 'w', encoding='utf-8') as f:
@@ -75,9 +80,9 @@ try:
     messagebox.showinfo("Success", f"File saved to:\n{full_path}")
 except Exception as e:
     messagebox.showerror("Error", f"Failed to save file:\n{e}")
-    
 
-def close_terminal(): 
+
+def close_terminal():
     if sys.platform == 'win32': os.system('taskkill /F /IM cmd.exe')
 
 close_terminal()
