@@ -1,11 +1,11 @@
 # Creative AI Writer Application - Technical Documentation
 
-### Overview
+## Overview
 
-This application empowers creative writers by integrating Large Language Models (LLMs) with a dynamic, agent-based architecture. It streamlines the writing process by facilitating research, managing workflows, and offering flexibility in model selection and tool utilization. The application features a user-friendly interface built with Tkinter, enabling seamless interaction and control over the creative process.
+This application empowers creative writers by integrating Large Language Models (LLMs) with a dynamic, agent-based architecture. It streamlines the content or code writing process by automating most tasks and all of the monotonous, meticulous aspects of writing and revising.  It facilitates creating, storing, editing, deleting, and executing unique and custom agents, tools, prompt chains, and cyclical workflows with the agent & tool builder interface and a drag and drop flow chart that is mapped onto Langgraph-based execution flows, all in an inuitive, AI-powered UI and accomodates and integrates with a wide variety of API-based and local LLMs. The application features a user-friendly interface built with Tkinter, enabling seamless interaction and control over the creative process.
 
 Features and Functionalities
-Interactive GUI (Tkinter): The GUI provides a central hub for user interaction. Key features include:
+Interactive GUI: The GUI provides a central hub for user interaction. Key features include:
 
 ```
 Prompt Input: Users enter writing prompts and instructions.

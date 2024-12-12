@@ -766,7 +766,7 @@ if __name__ == "__main__":
         self.cursor_color_index = (self.cursor_color_index + 1) % len(self.cursor_colors)
         
         # Schedule next update
-        self.window.after(500, self.animate_cursor)
+        window.after(500, animate_cursor)
 
     def get_all_files(self, directory: str, exclusions: list) -> list:
         files = []
@@ -1034,5 +1034,3 @@ Common Patterns:
         self.style.map('TRadiobutton',
             background=[('active', '#3d3d3d'), ('pressed', '#2d2d2d')],
             foreground=[('active', darker_green), ('pressed', darker_green)])
-        
-        self.

@@ -70,7 +70,7 @@ grpcio-status
 h11
 html2image
 html2text
-html5lib==1.1
+html5lib
 httpcore
 httptools
 httpx
@@ -214,13 +214,12 @@ sympy
 tabulate
 tenacity
 termcolor
-tiktoken
 tk
 tldextract
 tokentrim
 toml
 tomlkit
-tornado==6.4
+tornado
 tqdm
 traitlets
 trio
@@ -233,7 +232,6 @@ tzdata
 ujson
 uritemplate
 uvicorn
-virtualenv
 watchdog
 watchfiles
 wcwidth
