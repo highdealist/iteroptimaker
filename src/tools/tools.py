@@ -1,7 +1,7 @@
 """Module for defining and managing external tools for the AI assistant."""
 from typing import List, Annotated, Optional
-from search_manager import SearchManager
-from fetch_latest_arxiv_papers import fetch_latest_arxiv_papers
+from src.tools.search_manager import SearchManager
+from src.tools.fetch_latest_arxiv_papers import fetch_latest_arxiv_papers
 from langchain.tools import tool
 from langchain_experimental.utilities import PythonREPL
 import signal
@@ -97,7 +97,7 @@ def fetch_recent_arxiv_papers_by_topic(
 
     try:
         with timeout(timeout_seconds):
-            return fetch_latest_arxiv_results(topic)
+            return fetch_latest_arxiv_papers(topic)
     except TimeoutError:
         return ["Operation timed out while fetching arXiv papers. Please try again."]
     except Exception as e:
@@ -143,5 +143,3 @@ def python_repl(
         return f"Code execution timed out after {timeout_seconds} seconds"
     except Exception as e:
         return f"Failed to execute. Error: {repr(e)}"
-
-
