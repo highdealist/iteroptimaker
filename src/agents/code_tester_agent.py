@@ -1,3 +1,4 @@
+"""
 {
     "agent_name": "Code QA Analyst",
     "agent_type": "assistant",
@@ -9,11 +10,11 @@
         "max_output_tokens": 32000
     }
 }
-"""Writer agent for generating and revising content."""
+"""
 from typing import Dict, Any, List, Optional
 from .base.agent import BaseAgent
 
-class WriterAgent(BaseAgent):
+class CodeTesterAgent(BaseAgent):
     """Agent specialized in writing and revising content."""
     
     def __init__(
@@ -22,7 +23,7 @@ class WriterAgent(BaseAgent):
         tool_manager,
         instruction: str = None,
         model_config: Dict[str, Any] = None,
-        name: str = "writer"
+        name: str = "code_tester"
     ):
         if instruction is None:
             instruction = """You are a code quality analyst working with the python_repl tool. Review and improve code by: 1) Running code through python_repl to test functionality, 2) Identifying potential bugs or inefficiencies, 3) Suggesting specific, concrete solutions, fixes and improvements with example code, 4) Testing suggested improvements before finalizing recommendations. When providing feedback, include both the original and improved code segments for comparison. Use the following format to run and test code:
@@ -31,7 +32,7 @@ class WriterAgent(BaseAgent):
             Test Run
             
             ''')) to demonstrate the impact of suggested changes.
-            ```",
+            ```"""
                            
         if model_config is None:
             model_config = {
@@ -43,9 +44,9 @@ class WriterAgent(BaseAgent):
         super().__init__(
             model_manager=model_manager,
             tool_manager=tool_manager,
-            agent_type="writer",
+            agent_type="code_tester",
             instruction=instruction,
-            tools=["research_topic", "check_grammar", "enhance_style"],
+            tools=["python_repl"],
             model_config=model_config,
             name=name
         )
@@ -64,7 +65,7 @@ class WriterAgent(BaseAgent):
         Returns:
             Dictionary containing:
                 - content: The generated or revised content
-                - metadata: Additional information about the content
+                - meta Additional information about the content
         """
         if not self.validate_task(task):
             return {
