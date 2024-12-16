@@ -5,7 +5,10 @@ from click import prompt
 import google.generativeai as genai
 import re
 from agents import ModelFactory # Import ModelFactory
-from typing import List
+from typing import List, Dict, Any
+from agents.agent import BaseAgent as Agent
+from models.model_manager import ModelManager
+from tools.tool_manager import ToolManager
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 def upload_to_gemini(path: List[str], mime_type=None):
