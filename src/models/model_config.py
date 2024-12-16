@@ -1,5 +1,7 @@
 """Configuration for model fallbacks and settings."""
 
+system_instructions = "You are a helpful AI assistant."
+
 MODEL_FALLBACKS = {
     "gemini": ["gemini-pro-1.5-latest", "gemini-flash-1.5-latest", "claude-3-opus"],
     "gpt-4": ["gemini-pro", "gpt-3.5-turbo", "claude-3-opus"],
