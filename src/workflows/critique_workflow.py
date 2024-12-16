@@ -1,5 +1,5 @@
 """Workflow combining content generation and critique."""
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from ..agents.critic_agent import CriticAgent
 from ..agents.writer_agent import WriterAgent
 from ..models.model_manager import ModelManager
