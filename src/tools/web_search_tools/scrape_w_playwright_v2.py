@@ -13,6 +13,7 @@ import random
 from functools import wraps
 import time
 import rate_limiter
+from rate_limiter import AsyncLimiter
 
 retries=3
 timeout=30
@@ -293,7 +294,7 @@ def main():
     try:
         config = load_config('scraper_config.yaml')
         proxy_manager = ProxyManager(config.proxy_configs)
-        rate_limiter = Rate_limiter(1, config.rate_limit)
+        rate_limiter = rate_limiter.RateLimiter(1, config.rate_limit)
         
         with async_playwright() as p:
             browser = p.chromium.launch(headless=True)
