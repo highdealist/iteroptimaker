@@ -1,15 +1,13 @@
 import pyperclip
 import re
-from datetime import datetime
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import logging
-import sys
 
 # Configure logging
 logging.basicConfig(filename='clipboard_saver.log', level=logging.INFO,
-                    format='%(asctime)s %(levelname)s %(message)s')
+                    format='%(levelname)s %(message)s')
 
 class ClipboardSaver(tk.Tk):
     def __init__(self):
@@ -34,7 +32,8 @@ class ClipboardSaver(tk.Tk):
         ttk.Label(frame_filename, text="Filename:").pack(side=tk.LEFT)
         self.entry_filename = ttk.Entry(frame_filename, width=50)
         self.entry_filename.pack(side=tk.LEFT, padx=10)
-        self.entry_filename.insert(0, f"{self.filename}_{self.timestamp}.{self.file_type}")
+        self.entry_filename.insert(0, f"{self.filename}.{self.file_type}")
+        self.entry_filename.bind("<Return>", lambda event: self.save_and_close())
         
         # Frame for directory selection
         frame_dir = ttk.Frame(self)
@@ -81,17 +80,27 @@ class ClipboardSaver(tk.Tk):
     
     def parse_filename_and_extension(self):
         """
-        Attempt to parse a filename and file extension from the first line of text.
-        If successful, return the file type and filename. Otherwise, fall back to the original logic.
+        Attempt to find the pattern # filename.py on the first line of text and set it as the filename.
+        If found, remove the # sign and space. Otherwise, fall back to the original logic.
         """
         first_line = self.text.split('\n', 1)[0].strip()
-        match = re.search(r'(.+?)\.([a-zA-Z0-9]+)$', first_line)
+        match = re.search(r'#\s*(.+?)\.py$', first_line)
         if match:
             filename = match.group(1).strip()
-            file_extension = match.group(2).lower()
-            # Validate common file extensions
-            if file_extension in ['py', 'md', 'txt', 'html', 'css', 'js', 'json', 'csv', 'xml']:
-                return file_extension, filename
+            file_extension = 'py'
+            return file_extension, filename
+        else:
+            # Attempt to parse a filename and file extension from the first line of text.
+            first_line = self.text.split('\n', 1)[0].strip()
+            match = re.search(r'(.+?)\.([a-zA-Z0-9]+)$', first_line)
+            if match:
+                filename = match.group(1).strip()
+                file_extension = match.group(2).lower()
+                # Validate common file extensions
+                if file_extension in ['py', 'md', 'txt', 'html', 'css', 'js', 'json', 'csv', 'xml']:
+                    return file_extension, filename
+            # If no valid extension is found, fall back to default values.
+            return 'txt', 'clipboard'
         
         # Fall back to original logic
         file_type = self.determine_file_type(self.text)
@@ -136,7 +145,7 @@ class ClipboardSaver(tk.Tk):
     
     def sanitize_filename(self, filename):
         """Sanitize the filename to remove invalid characters."""
-        return re.sub(r'[<>:"/\\|?*\n]+', '_', filename)
+        return re.sub(r'[<>:"/\\|?*\n]+', '', filename).strip()
     
     def save_file(self):
         filename = self.entry_filename.get()
@@ -157,12 +166,8 @@ class ClipboardSaver(tk.Tk):
     
     def save_and_close(self):
         self.save_file()
-        sys.exit()
-        root.destroy()
-        #Close terminal
-        os.system("cls")
-        os.system("taskkill /f /im cmd.exe")
-        os.system("taskkill /f /im powershell.exe")
+        self.destroy()
+
 
 
 if __name__ == "__main__":

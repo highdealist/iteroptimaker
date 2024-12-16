@@ -1,19 +1,16 @@
+import os
+import re
+import time
+from typing import Optional, Tuple
+from argparse import ArgumentParser
 from bs4 import BeautifulSoup, Comment
-import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
+from fake_useragent import UserAgent
+from msedge.selenium_tools import Edge, Service as EdgeService, EdgeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium_stealth import stealth
 from newspaper import Article
 import logging
-from typing import Optional, Tuple
-from fake_useragent import UserAgent
-from urllib.parse import urlparse
-import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -58,25 +55,14 @@ class WebContentExtractor:
     
     @classmethod
     def _initialize_driver(cls):
-        """Initializes Chrome WebDriver with enhanced anti-detection measures."""
-        chrome_options = ChromeOptions()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option('useAutomationExtension', False)
+        """Initializes Microsoft Edge WebDriver with enhanced anti-detection measures."""
+        edge_options = EdgeOptions()
+        edge_options.use_chromium = True  # Important for compatibility
         
-        service = ChromeService(ChromeDriverManager().install())
-        cls._driver = webdriver.Chrome(service=service, options=chrome_options)
+        service = EdgeService(executable_path="C:\\webdrivers\\edgedriver_win64\\msedgedriver.exe")
         
-        stealth(cls._driver,
-                languages=["en-US", "en"],
-                vendor="Google Inc.",
-                platform="Win32",
-                webgl_vendor="Intel Inc.",
-                renderer="Intel Iris OpenGL Engine",
-                fix_hairline=True)
-    
+        cls._driver = webdriver.Edge(service=service, options=edge_options)
+        
     @classmethod
     def quit_driver(cls):
         """Quits the WebDriver."""
@@ -163,20 +149,18 @@ class WebContentExtractor:
         The extraction methods are tried in the following order:
         1. requests with BeautifulSoup (fastest, works for simple pages)
         2. newspaper3k (best for article content)
-        3. Selenium (best for dynamic content, slowest)
+        3. Selenium (best for dynamic content)
         """
         if not url.startswith(["http://", "https://"]):
             url = "https://" + url
         else:
-            url = url        
-      
+            url = url
+        
         if not self.is_valid_url(url):
-            url=input("URL Invalid. Enter URL and press Enter")
+            url = input("URL Invalid. Enter URL and press Enter")
             if not self.is_valid_url(url):
                 logger.error(f"Invalid URL: {url}")
                 return None
-        
-        #Check f
         
         # Check content type
         try:
@@ -186,7 +170,6 @@ class WebContentExtractor:
                 logger.warning(f"URL may not be HTML content (type: {content_type})")
         except Exception as e:
             logger.warning(f"Could not determine content type: {e}")
-
         
         # Try different extraction methods in order
         content = None
@@ -215,10 +198,8 @@ class WebContentExtractor:
         return None
 
 if __name__ == "__main__":
-    import argparse
-    
     # Create argument parser
-    parser = argparse.ArgumentParser(description='Extract content from a web page.')
+    parser = ArgumentParser(description='Extract content from a web page.')
     parser.add_argument('--url', type=str, help='URL of the web page to extract content from')
     parser.add_argument('--timeout', type=int, default=10, help='Timeout in seconds for requests (default: 10)')
     parser.add_argument('--max-retries', type=int, default=1, help='Maximum number of retry attempts (default: 1)')
@@ -230,7 +211,7 @@ if __name__ == "__main__":
         url = input("Please enter the URL to extract content from: ")
     else:
         url = args.url
-        
+    
     # Create extractor instance
     extractor = WebContentExtractor(max_retries=args.max_retries, timeout=args.timeout)
     

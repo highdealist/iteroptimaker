@@ -48,3 +48,4 @@ env/
 .project
 .classpath
 .factorypath
+*clipboard2file/* 
