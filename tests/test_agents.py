@@ -1,7 +1,12 @@
 import unittest
+import sys
+import os
 from unittest.mock import MagicMock, patch
 from typing import Dict, Any, List
 import re
+
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.agents.agent import BaseAgent
 from src.agents.researcher_agent import ResearcherAgent
