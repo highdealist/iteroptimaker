@@ -11,6 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from newspaper import Article
 import logging
+from urllib.parse import urlparse
+import requests
+from selenium import webdriver
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -228,12 +231,12 @@ if __name__ == "__main__":
             # Try to get additional metadata using fetch_article_text
             try:
                 title, author, pub_date, _ = fetch_article_text(args.url)
-                print("\nMetadata:")
+                print("\nMeta")
                 print(f"Title: {title}")
                 print(f"Author: {author}")
                 print(f"Publish Date: {pub_date}")
             except Exception as e:
-                logger.warning(f"Could not fetch article metadata: {e}")
+                logger.warning(f"Could not fetch article meta {e}")
         else:
             print("Failed to extract content from the URL.")
     
