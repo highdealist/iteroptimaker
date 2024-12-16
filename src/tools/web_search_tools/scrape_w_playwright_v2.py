@@ -298,7 +298,7 @@ def main():
         with async_playwright() as p:
             browser = p.chromium.launch(headless=True)
             with browser.new_context(user_agent=ua_rotator.get_random_user_agent()) as context:
-                rate_limiter = rate_limiter.RateLimiter(1, config.rate_limit)
+                rate_limiter = AsyncLimiter(1, config.rate_limit)
                 all_results = scrape_pages(config, context, proxy_manager, rate_limiter)
         
         save_results_to_csv(all_results, 'search_results_with_content.csv')
