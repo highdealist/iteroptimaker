@@ -15,18 +15,11 @@ class ModelManager:
         self._model_classes = {}
         self._model_settings = {}
         self._model_fallbacks = {}
-        self._initialize_model_classes()
-        
-    def _initialize_model_classes(self):
-        """Initialize model classes lazily to avoid circular imports."""
-        from gemini import GeminiModel
-        from openai import OpenAIModel
-        from .model_config import MODEL_FALLBACKS, MODEL_SETTINGS
-        
         self._model_classes = {
-            "gemini": GeminiModel,
-            "openai": OpenAIModel
+            "gemini": None,
+            "openai": None
         }
+        from .model_config import MODEL_FALLBACKS, MODEL_SETTINGS
         self._model_settings = MODEL_SETTINGS
         self._model_fallbacks = MODEL_FALLBACKS
         
@@ -57,6 +50,13 @@ class ModelManager:
             
         config = model_config or self._model_settings.get(model_type, {})
         try:
+            if self._model_classes[model_type] is None:
+                if model_type == "gemini":
+                    from gemini import GeminiModel
+                    self._model_classes[model_type] = GeminiModel
+                elif model_type == "openai":
+                    from openai import OpenAIModel
+                    self._model_classes[model_type] = OpenAIModel
             model_class = self._model_classes[model_type]
             model = model_class(config)
             self.models[model_type] = model
