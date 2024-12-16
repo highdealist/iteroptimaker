@@ -1,9 +1,9 @@
-from tools.search_manager import SearchManager, initialize_search_manager
-from tools.tool_manager import ToolManager
-from models.model_manager import ModelManager
-from config import GEMINI_API_KEY
-from models.llm_providers import GeminiProvider
-from agents.agent import AgentManager, Agent
+from .search_manager import SearchManager, initialize_search_manager
+from .tool_manager import ToolManager
+from ..models.model_manager import ModelManager
+from ..config import GEMINI_API_KEY
+from ..models.llm_providers import GeminiProvider
+from ..agents.agent import AgentManager, Agent
 
 import json
 from typing import List, Dict, Optional
@@ -423,9 +423,9 @@ Your task is to build comprehensive understanding through iterative research whi
                 if response.search_query:
                     # Perform web search
                     try:
-                        search_results = self.tool_manager.web_search(
-                            response.search_query,
-                            results_per_query
+                        search_results = self.tool_manager.get_tool("search").execute(
+                            query=response.search_query,
+                            num_results=results_per_query
                         )
                         
                         # Update knowledge base with new information
@@ -519,7 +519,7 @@ def main():
     try:
         # Initialize required components
         search_manager = initialize_search_manager()
-        tool_manager = tools.ToolManager(search_manager)
+        tool_manager = ToolManager()
         model_manager = ModelManager()
         
         # Create research agent
