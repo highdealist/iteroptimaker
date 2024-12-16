@@ -30,6 +30,16 @@ class MockTool(BaseAgent):
     def execute(self, **kwargs) -> ToolResult:
         return ToolResult(success=True, result=self.result)
 
+class ConcreteAgent(BaseAgent):
+    def __init__(self, model_manager, tool_manager, instruction, model_config, name):
+        super().__init__(model_manager, tool_manager, instruction, model_config, name)
+
+    def analyze(self, task: Dict[str, Any]) -> str:
+        return "Analysis result"
+
+    def validate_task(self, task: Dict[str, Any]) -> bool:
+        return True
+
 class TestBaseAgent(unittest.TestCase):
     def setUp(self):
         self.model_manager = MagicMock(spec=ModelManager)
@@ -42,7 +52,7 @@ class TestBaseAgent(unittest.TestCase):
             "tool1": self.tool1,
             "tool2": self.tool2,
         }.get(name)
-        self.agent = BaseAgent(
+        self.agent = ConcreteAgent(
             model_manager=self.model_manager,
             tool_manager=self.tool_manager,
             instruction="Test instruction",
