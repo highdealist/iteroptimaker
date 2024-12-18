@@ -1,23 +1,35 @@
 import logging
 import re
-from .tools.web_search_tools.search_manager_LATESTWORKING import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
-from .models.gemini import GeminiModel  # Import the GeminiModel class
+from ...id8r.src.tools.web_search_tools.search_manager_LATESTWORKING import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
+from .models.gemini import GeminiModel
 from typing import List, Dict, Any
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('researcher.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+    
 def extract_tool_call(text: str) -> Dict[str, str]:
-    """Extract tool call and query from Gemini response."""
+    logger.debug(f"Attempting to extract tool call from text: {text}")
     match = re.search(r"Tool:\s*(.*?),\s*Query:\s*(.*)", text)
     if match:
-        return {"tool": match.group(1).strip(), "query": match.group(2).strip()}
+        result = {"tool": match.group(1).strip(), "query": match.group(2).strip()}
+        logger.debug(f"Successfully extracted tool call: {result}")
+        return result
+    logger.debug("No tool call found in text")
     return None
 
 def process_user_input(user_input: str) -> str:
-    """Process user input using Gemini and potentially other tools."""
+    logger.info("Starting process_user_input")
+    logger.info(f"Initializing search manager")
     search_manager = initialize_search_manager()
     if not search_manager:
+        logger.error("Search manager initialization failed")
         return "Search functionality is disabled."
 
     researcher_system_message = (
@@ -28,19 +40,9 @@ def process_user_input(user_input: str) -> str:
         "This new query should be more specific, more detailed, and more effective query keywords to improve the quality and specificity of the search results and get the needed information. !!! NOTE: DO NOT ASSUME OR GUESS ANY ASSERTION OR STATEMENT OF FACT IN YOUR REPORTS.  IF YOU ARE NOT PROVIDED WITH THE NECESSARY INFORMATION, DO NOT WRITE THE REPORT UNTIL YOU OBTAIN IT FROM AS MANY SEARCH REQUESTS AS REQUIRED. RESULTS FROM THIS SEARCH QUERY IN THE FOLLOWING MESSAGE !!!  "
         "To request an additional search if needed, use the following format explicitly and include nothing else in your response: "
         "Tool: Web Search, Query: | Your Search Query | "
-        "NOTE: "
-        "*REPLACE the text 'Your Search Query' with your actual query. "
-        "*DO INCLUDE: 'Tool: Web Search', THE PIPE CHARACTERS, THE COLON (:). "
-        "*DO NOT INCLUDE ANY EXTRA CHARACTERS NOR ALTER THE FORMATTING IN ANY WAY! "
-        "*DO NOT WRITE THE REPORT UNTIL YOU ARE PROVIDED WITH THE RESULTS FROM THIS SEARCH QUERY IN THE FOLLOWING        MESSAGE. "
-        "*IF AND ONLY IF you decide to request an additional search, following the above format is important,        otherwise your search request will not be seen. "
-        "If and when you have the necessary information to sufficiently answer the original query made by the team/      writer OR you have reached the maximum limit on additional searches (3), synthesize a relevant and helpful      report from the search results already gathered and provide all needed information and details so the team        can continue their work. "
-        "Include: "
-        ". Implications/Actionable Information/Applicable Steps relevant to the context "
-        ". Sources "
-        "Prioritize synthesizing available information before requesting additional searches."
     )
-    
+
+    logger.info("Initializing Gemini model")
     researcher_model = GeminiModel(
         model_config={"model_name": "gemini-pro", "temperature": 0.7},
         system_message=researcher_system_message
@@ -52,7 +54,7 @@ def process_user_input(user_input: str) -> str:
     max_searches = 3
 
     while search_count < max_searches:
-        # Construct the prompt
+        logger.info(f"Starting search iteration {search_count + 1}/{max_searches}")
         prompt = f"""
         ## Conversation History:
         {conversation_history}
@@ -69,31 +71,31 @@ def process_user_input(user_input: str) -> str:
         If NO, synthesize a report based on the available information.
         """
 
-        # Send user input to the researcher model
-        logging.info(f"User Input: {user_input}")
+        logger.info("Sending prompt to researcher model")
         researcher_response = researcher_model.chat([{"role": "user", "content": prompt}])
-        logging.info(f"Researcher Response: {researcher_response}")
+        logger.info(f"Received response from researcher model: {researcher_response[:200]}...")
         conversation_history += f"User: {user_input}\nAI: {researcher_response}\n"
 
-        # Check if a tool call is present
         tool_call = extract_tool_call(researcher_response)
 
         if tool_call:
+            logger.info(f"Tool call detected: {tool_call}")
             if tool_call["tool"] == "Web Search":
-                # Perform the web search
-                logging.info(f"Performing Web Search with query: {tool_call['query']}")
+                logger.info(f"Executing web search with query: {tool_call['query']}")
                 search_results_list = search_manager.search(tool_call['query'], num_results=5)
                 search_results = f"Web search results for '{tool_call['query']}':\n"
                 for i, result in enumerate(search_results_list):
                     search_results += f"Result {i+1}:\nTitle: {result['title']}\nURL: {result['url']}\nSnippet: {result['snippet']}\nContent: {result['content'][:500]}...\n\n"
                 search_count += 1
+                logger.info(f"Search completed. Total searches: {search_count}")
             else:
+                logger.warning(f"Unsupported tool requested: {tool_call['tool']}")
                 return "Unsupported tool."
         else:
-            # If no tool call, return the response
+            logger.info("No tool call detected, returning researcher response")
             return researcher_response
 
-    # If we reach here, we've hit the max searches
+    logger.info("Maximum searches reached, generating final response")
     final_prompt = f"""
     ## Conversation History:
     {conversation_history}
@@ -108,10 +110,16 @@ def process_user_input(user_input: str) -> str:
     You have reached the maximum number of allowed searches.
     Synthesize a research report based on the available information, addressing the user's request.
     """
+    
+    logger.info("Sending final prompt to researcher model")
     final_response = researcher_model.chat([{"role": "user", "content": final_prompt}])
+    logger.info("Process completed successfully")
     return final_response
 
 if __name__ == "__main__":
+    logger.info("Starting main execution")
     user_input = input("Enter your query: ")
+    logger.info(f"Received user input: {user_input}")
     final_response = process_user_input(user_input)
+    logger.info("Process completed, printing final response")
     print(f"Final Response: {final_response}")
