@@ -115,11 +115,3 @@ def process_user_input(user_input: str) -> str:
     final_response = researcher_model.chat([{"role": "user", "content": final_prompt}])
     logger.info("Process completed successfully")
     return final_response
-
-if __name__ == "__main__":
-    logger.info("Starting main execution")
-    user_input = input("Enter your query: ")
-    logger.info(f"Received user input: {user_input}")
-    final_response = process_user_input(user_input)
-    logger.info("Process completed, printing final response")
-    print(f"Final Response: {final_response}")

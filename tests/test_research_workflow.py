@@ -2,31 +2,40 @@ import unittest
 from unittest.mock import patch, MagicMock
 from src.research_workflow import extract_tool_call, process_user_input
 import logging
+from io import StringIO
 
 class TestResearchWorkflow(unittest.TestCase):
 
     def setUp(self):
         self.logger = logging.getLogger("test_logger")
         self.logger.setLevel(logging.DEBUG)
-        self.handler = logging.StreamHandler()
+        self.log_capture_string = StringIO()
+        self.handler = logging.StreamHandler(self.log_capture_string)
         self.logger.addHandler(self.handler)
 
     def tearDown(self):
         self.logger.removeHandler(self.handler)
+        self.log_capture_string.close()
+
+    def get_log_messages(self):
+        return self.log_capture_string.getvalue()
 
     def test_extract_tool_call_valid(self):
         text = "Tool: Web Search, Query: | What is the capital of France? |"
         expected = {"tool": "Web Search", "query": "What is the capital of France?"}
         self.assertEqual(extract_tool_call(text), expected)
+        self.assertIn("Successfully extracted tool call", self.get_log_messages())
 
     def test_extract_tool_call_no_match(self):
         text = "This is a regular text without a tool call."
         self.assertIsNone(extract_tool_call(text))
+        self.assertIn("No tool call found in text", self.get_log_messages())
 
     def test_extract_tool_call_extra_spaces(self):
         text = "Tool:  Web Search  ,  Query:  |  What is the capital of France?  |  "
         expected = {"tool": "Web Search", "query": "What is the capital of France?"}
         self.assertEqual(extract_tool_call(text), expected)
+        self.assertIn("Successfully extracted tool call", self.get_log_messages())
 
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
@@ -42,6 +51,7 @@ class TestResearchWorkflow(unittest.TestCase):
         mock_gemini_model.assert_called_once()
         mock_search_manager.assert_called_once()
         mock_model_instance.chat.assert_called()
+        self.assertIn("No tool call detected, returning researcher response", self.get_log_messages())
 
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
@@ -60,6 +70,8 @@ class TestResearchWorkflow(unittest.TestCase):
         mock_gemini_model.assert_called()
         mock_search_manager.assert_called_once()
         mock_model_instance.chat.assert_called()
+        self.assertIn("Tool call detected", self.get_log_messages())
+        self.assertIn("Executing web search with query", self.get_log_messages())
 
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
@@ -81,6 +93,7 @@ class TestResearchWorkflow(unittest.TestCase):
         mock_search_manager.assert_called()
         self.assertEqual(mock_search_manager.return_value.search.call_count, 3)
         mock_model_instance.chat.assert_called()
+        self.assertIn("Maximum searches reached, generating final response", self.get_log_messages())
 
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
@@ -96,6 +109,7 @@ class TestResearchWorkflow(unittest.TestCase):
         mock_gemini_model.assert_not_called()
         mock_search_manager.assert_called_once()
         mock_model_instance.chat.assert_not_called()
+        self.assertIn("Search manager initialization failed", self.get_log_messages())
 
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
@@ -111,6 +125,7 @@ class TestResearchWorkflow(unittest.TestCase):
         mock_gemini_model.assert_called_once()
         mock_search_manager.assert_called_once()
         mock_model_instance.chat.assert_called_once()
+        self.assertIn("Unsupported tool requested", self.get_log_messages())
 
 if __name__ == '__main__':
     unittest.main()
