@@ -37,6 +37,11 @@ class TestResearchWorkflow(unittest.TestCase):
         self.assertEqual(extract_tool_call(text), expected)
         self.assertIn("Successfully extracted tool call", self.get_log_messages())
 
+    def test_extract_tool_call_invalid_format(self):
+        text = "Tool:Web Search Query: | What is the capital of France? |"
+        self.assertIsNone(extract_tool_call(text))
+        self.assertIn("No tool call found in text", self.get_log_messages())
+
     @patch('src.research_workflow.initialize_search_manager')
     @patch('src.research_workflow.GeminiModel')
     def test_process_user_input_no_tool_call(self, mock_gemini_model, mock_search_manager):
