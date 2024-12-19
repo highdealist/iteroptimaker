@@ -1,16 +1,4 @@
-"""
-{
-    "agent_name": "Code QA Analyst",
-    "agent_type": "assistant",
-    "tools": ["python_repl"],
-    "generation_config": {
-        "temperature": 0.8,
-        "top_p": 0.7,
-        "top_k": 50,
-        "max_output_tokens": 32000
-    }
-}
-"""
+"""Agent specialized in testing code."""
 from typing import Dict, Any, List, Optional
 from .base.agent import BaseAgent
 
@@ -26,18 +14,32 @@ class CodeTesterAgent(BaseAgent):
         name: str = "code_tester"
     ):
         if instruction is None:
-            instruction = """You are a code quality analyst working with the python_repl tool. Review and improve code by: 1) Running code through python_repl to test functionality, 2) Identifying potential bugs or inefficiencies, 3) Suggesting specific, concrete solutions, fixes and improvements with example code, 4) Testing suggested improvements before finalizing recommendations. When providing feedback, include both the original and improved code segments for comparison. Use the following format to run and test code:
-            ```
-            tool_call(python_repl('''
-            Test Run
+            instruction = """You are a code quality analyst working with the python_repl tool. Your mission is to test code by running it through python_repl to test functionality, identify potential bugs or inefficiencies, and suggest specific, concrete solutions, fixes and improvements with example code. When providing feedback, include both the original and improved code segments for comparison. Use the following format to run and test code:
             
-            ''')) to demonstrate the impact of suggested changes.
-            ```"""
+            <tool>
+            python_repl(
+                code="The code to test",
+                test="The test case to run"
+            )
+            </tool>
+            
+            Always wrap the tool call in <tool> tags. Put each parameter on a new line with proper indentation. Use proper Python literal syntax for values: Strings in double quotes, numbers without quotes, booleans as true/false, lists in square brackets, and dictionaries in curly braces. Always provide required parameters.
+            
+            Your response should be in JSON format with the following schema:
+            {
+                "status": "success" | "error",
+                "message": "A description of the test and its outcome",
+                "test_results": {
+                    "test_name": "Result of the test"
+                },
+                "error_details": "Details of any errors encountered"
+            }
+            """
                            
         if model_config is None:
             model_config = {
-                "temperature": 0.8,  # Slightly higher for creative writing
-                "max_tokens": 8000,  # Longer outputs for content generation
+                "temperature": 0.8,
+                "max_tokens": 8000,
                 "top_p": 0.9
             }
             
@@ -52,173 +54,49 @@ class CodeTesterAgent(BaseAgent):
         )
         
     def analyze(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate or revise content based on the task.
-        
-        Args:
-            task: Dictionary containing:
-                - prompt: The writing prompt or task description
-                - style: Optional style guidelines
-                - constraints: Optional list of constraints
-                - previous_content: Optional content to revise
-                - feedback: Optional feedback to address
-                
-        Returns:
-            Dictionary containing:
-                - content: The generated or revised content
-                - meta Additional information about the content
-        """
+        """Test code based on the task."""
         if not self.validate_task(task):
             return {
-                "error": "Invalid task format",
-                "required_fields": ["prompt"]
+                "status": "error",
+                "message": "Invalid task format",
+                "error_details": "Missing required fields in task"
             }
             
         # Extract task components
-        prompt = task["prompt"]
-        style = task.get("style", "")
-        constraints = task.get("constraints", [])
-        previous_content = task.get("previous_content")
-        feedback = task.get("feedback", {})
+        code = task["code"]
+        test_cases = task.get("test_cases", [])
         
-        # Construct the generation/revision prompt
-        if previous_content and feedback:
-            # Revision mode
-            content_prompt = self._construct_revision_prompt(
-                prompt,
-                previous_content,
-                feedback,
-                style,
-                constraints
-            )
-        else:
-            # Generation mode
-            content_prompt = self._construct_generation_prompt(
-                prompt,
-                style,
-                constraints
-            )
+        if not code or not test_cases:
+            return {
+                "status": "error",
+                "message": "Missing code or test cases",
+                "error_details": "Both 'code' and 'test_cases' are required"
+            }
             
-        # Generate the content
-        response = self.generate_response(content_prompt)
-        
-        # Extract metadata about the content
-        metadata = self._analyze_content(response)
+        test_results = self._run_tests(code, test_cases)
         
         return {
-            "content": response,
-            "metadata": metadata
+            "status": "success",
+            "message": "Code testing completed",
+            "test_results": test_results,
+            "error_details": ""
         }
+        
+    def _run_tests(
+        self,
+        code: str,
+        test_cases: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Run provided test cases against the code."""
+        test_results = {}
+        for test_case in test_cases:
+            result = self.tool_manager.use_tool(
+                "python_repl",
+                {"code": code, "test": test_case}
+            )
+            test_results[test_case["name"]] = result
+        return test_results
         
     def validate_task(self, task: Dict[str, Any]) -> bool:
-        """Validate the task has required fields.
-        
-        Args:
-            task: Task dictionary to validate
-            
-        Returns:
-            True if task contains required fields
-        """
-        return "prompt" in task
-        
-    def _construct_generation_prompt(
-        self,
-        prompt: str,
-        style: str,
-        constraints: List[str]
-    ) -> str:
-        """Construct a prompt for generating new content.
-        
-        Args:
-            prompt: The main writing prompt
-            style: Style guidelines
-            constraints: List of constraints
-            
-        Returns:
-            Complete prompt for content generation
-        """
-        style_guide = f"\nStyle Guidelines: {style}" if style else ""
-        constraints_text = "\nConstraints:\n- " + "\n- ".join(constraints) if constraints else ""
-        
-        return f"""Task: {prompt}
-                  {style_guide}
-                  {constraints_text}
-                  
-                  Please generate content that follows these guidelines while maintaining
-                  high quality, engagement, and relevance to the task."""
-                  
-    def _construct_revision_prompt(
-        self,
-        prompt: str,
-        previous_content: str,
-        feedback: Dict[str, Any],
-        style: str,
-        constraints: List[str]
-    ) -> str:
-        """Construct a prompt for revising content.
-        
-        Args:
-            prompt: The original writing prompt
-            previous_content: Content to revise
-            feedback: Feedback to address
-            style: Style guidelines
-            constraints: List of constraints
-            
-        Returns:
-            Complete prompt for content revision
-        """
-        # Extract feedback components
-        strengths = feedback.get("strengths", [])
-        improvements = feedback.get("improvements", [])
-        action_items = feedback.get("action_items", [])
-        
-        strengths_text = "\nStrengths to maintain:\n- " + "\n- ".join(strengths) if strengths else ""
-        improvements_text = "\nAreas to improve:\n- " + "\n- ".join(improvements) if improvements else ""
-        actions_text = "\nSpecific actions:\n- " + "\n- ".join(action_items) if action_items else ""
-        
-        style_guide = f"\nStyle Guidelines: {style}" if style else ""
-        constraints_text = "\nConstraints:\n- " + "\n- ".join(constraints) if constraints else ""
-        
-        return f"""Original Task: {prompt}
-                  
-                  Previous Version:
-                  {previous_content}
-                  
-                  Feedback:{strengths_text}{improvements_text}{actions_text}
-                  {style_guide}
-                  {constraints_text}
-                  
-                  Please revise the content to address the feedback while maintaining
-                  the strengths and core message of the original."""
-                  
-    def _analyze_content(self, content: str) -> Dict[str, Any]:
-        """Analyze the generated content for metadata.
-        
-        Args:
-            content: The generated content
-            
-        Returns:
-            Dictionary containing metadata about the content
-        """
-        # Basic metadata
-        word_count = len(content.split())
-        sentence_count = len([s for s in content.split('.') if s.strip()])
-        
-        # Use available tools for deeper analysis
-        metadata = {
-            "word_count": word_count,
-            "sentence_count": sentence_count,
-            "average_sentence_length": word_count / max(sentence_count, 1)
-        }
-        
-        # Add tool-based analysis if available
-        try:
-            if "enhance_style" in self.tools:
-                style_tool = self.tool_manager.get_tool("enhance_style")
-                if style_tool:
-                    style_result = style_tool.execute(text=content)
-                    if style_result.success:
-                        metadata.update(style_result.result)
-        except Exception:
-            pass  # Skip additional analysis if tools fail
-            
-        return metadata
+        """Validate the task has required fields."""
+        return "code" in task and "test_cases" in task
