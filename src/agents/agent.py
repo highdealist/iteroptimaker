@@ -7,7 +7,7 @@ import re
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
 from langchain_core.messages import AIMessage, BaseMessage
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, END
 from typing_extensions import TypedDict
 import operator
 from langgraph.prebuilt import ToolNode
