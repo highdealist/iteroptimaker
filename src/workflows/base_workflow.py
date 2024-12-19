@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
+from langchain_core.messages import BaseMessage
 
 @dataclass
 class WorkflowState:
@@ -12,7 +13,8 @@ class WorkflowState:
     output: str = ""
     context: str = ""
     intermediate_results: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    meta Dict[str, Any] = field(default_factory=dict)
+    chat_history: List[BaseMessage] = field(default_factory=list)
 
 
 class BaseWorkflow(ABC):
@@ -28,6 +30,7 @@ class BaseWorkflow(ABC):
         self.tool_manager = tool_manager
         self.max_iterations = max_iterations
         self.execution_history = []
+        self.tool_node = self.tool_manager.get_tool_node()
         
     @abstractmethod
     def run(self, task: Dict[str, Any], **kwargs) -> Dict[str, Any]:
@@ -65,36 +68,20 @@ class BaseWorkflow(ABC):
         self,
         task: Dict[str, Any],
         result: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        chat_history: Optional[List[BaseMessage]] = None
     ) -> None:
         """Record an execution in the history.
         
         Args:
             task: The executed task
             result: The execution result
-            metadata: Optional execution metadata
+            meta Optional execution metadata
+            chat_history: Optional chat history
         """
         self.execution_history.append({
             "task": task,
             "result": result,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
+            "chat_history": chat_history or []
         })
-        
-    def _get_tool(self, tool_name: str):
-        """Get a tool by name with error handling.
-        
-        Args:
-            tool_name: Name of the tool to get
-            
-        Returns:
-            The tool instance or None if not found
-        """
-        try:
-            return self.tool_manager.get_tool(tool_name)
-        except Exception as e:
-            self._record_execution(
-                {"tool_request": tool_name},
-                {"error": str(e)},
-                {"type": "tool_error"}
-            )
-            return None
