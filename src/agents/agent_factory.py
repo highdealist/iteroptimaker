@@ -160,7 +160,6 @@ class AgentFactory:
     @classmethod
     def create_agent(
         cls,
-        agent_type: str,
         model_manager: ModelManager,
         tool_manager: ToolManager,
         config: AgentConfig
@@ -169,7 +168,6 @@ class AgentFactory:
         Creates an agent based on configuration.
         
         Args:
-            agent_type: Type of agent to create
             model_manager: ModelManager instance
             tool_manager: ToolManager instance
             config: Agent configuration
@@ -178,7 +176,7 @@ class AgentFactory:
             Agent instance or None if creation fails
         """
         try:
-            agent_class = cls._import_agent_class(agent_type)
+            agent_class = cls._import_agent_class(config.agent_type)
             if agent_class is None:
                 return None
 
@@ -186,10 +184,7 @@ class AgentFactory:
             agent = agent_class(
                 model_manager=model_manager,
                 tool_manager=tool_manager,
-                agent_type=config.agent_type,
-                instruction=config.system_prompt,
-                tools=config.tools,
-                model_config=config.generation_config
+                config=config
             )
             return agent
 

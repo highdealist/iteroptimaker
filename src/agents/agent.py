@@ -11,9 +11,18 @@ from langgraph.graph import StateGraph, END
 from typing_extensions import TypedDict
 import operator
 from langgraph.prebuilt import ToolNode
+from dataclasses import dataclass
 model_manager = ModelManager()
 tool_manager = ToolManager()
 
+@dataclass
+class AgentConfig:
+    """Configuration for an agent."""
+    agent_type: str
+    system_prompt: str
+    tools: List[str]
+    generation_config: Dict[str, Any]
+    model_type: str = "default"
 
 class BaseAgent(ABC):
     """Abstract base class for all agents in the system."""
@@ -22,19 +31,16 @@ class BaseAgent(ABC):
         self,
         model_manager: ModelManager,
         tool_manager: ToolManager,
-        agent_type: str,
-        instruction: str,
-        tools: List[str],
-        model_config: Dict[str, Any],
+        config: AgentConfig,
         name: Optional[str] = None
     ):
         self.model_manager = model_manager
         self.tool_manager = tool_manager
-        self.agent_type = agent_type
-        self.instruction = instruction
-        self.tools = tools
-        self.model_config = model_config
-        self.name = name or agent_type.capitalize()
+        self.agent_type = config.agent_type
+        self.instruction = config.system_prompt
+        self.tools = config.tools
+        self.model_config = config.generation_config
+        self.name = name or config.agent_type.capitalize()
         self.chat_log = []
         self.graph = self._create_graph()
         
