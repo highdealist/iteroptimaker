@@ -6,7 +6,6 @@ from typing import Dict, Any, List, Optional
 import re
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
-from ..tools.tool_executor import ToolExecutor
 from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.prebuilt import ToolNode
 model_manager = ModelManager()
@@ -28,7 +27,6 @@ class BaseAgent(ABC):
     ):
         self.model_manager = model_manager
         self.tool_manager = tool_manager
-        self.tool_executor = ToolExecutor(tool_manager)
         self.agent_type = agent_type
         self.instruction = instruction
         self.tools = tools
@@ -196,7 +194,7 @@ Important:
                 return result.error
         return _tool
     
-    def _create_pydantic_model(self, parameters: List[Dict[str, Any]]) -> Any:
+    def _create_pydantic_model(self, parameters: List[Any]) -> Any:
         """Create a pydantic model from a list of parameters."""
         from pydantic import BaseModel, create_model
         fields = {}

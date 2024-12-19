@@ -23,10 +23,9 @@ class CodeEngineerAgent(BaseAgent):
             
             When using tools, format your requests like this:
             <tool>
-            tool_name(
-                param1="value1",
-                param2=123,
-                param3=true
+            python_repl(
+                code="The code to test",
+                test="The test case to run"
             )
             </tool>
             
@@ -179,12 +178,9 @@ class CodeEngineerAgent(BaseAgent):
         
         # Verify syntax
         if language.lower() == "python":
-            tool_result = self.tool_executor.execute(
-                "python_repl",
-                {"code": code, "action": "verify_syntax"}
-            )
-            if not tool_result.success:
-                return f"Error verifying syntax: {tool_result.error}"
+            tool_result = self.generate_response(f"""<tool>python_repl(code="{code}", action="verify_syntax")</tool>""")
+            if "Error" in tool_result:
+                return f"Error verifying syntax: {tool_result}"
             
         return code
         
