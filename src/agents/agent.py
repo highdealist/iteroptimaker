@@ -7,6 +7,8 @@ import re
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
 from ..tools.tool_executor import ToolExecutor
+from langchain_core.messages import AIMessage, BaseMessage
+from langgraph.prebuilt import ToolNode
 model_manager = ModelManager()
 tool_manager = ToolManager()
 
@@ -33,6 +35,7 @@ class BaseAgent(ABC):
         self.model_config = model_config
         self.name = name or agent_type.capitalize()
         self.chat_log = []
+        self.tool_node = ToolNode(self._get_langchain_tools())
         
     @abstractmethod
     def analyze(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -81,16 +84,15 @@ class BaseAgent(ABC):
         messages = self.chat_log + [{"role": "user", "content": user_input}]
         
         # Generate initial response
-        response = model.generate_message(
+        response = model.chat(
             messages,
             context=context,
+            tools=self._get_langchain_tools(),
             **self.model_config
         )
         
-        response_text = response['content']
-        
         # Process any tool calls in the response
-        response_text = self._process_tool_calls(response_text)
+        response_text = self._process_tool_calls(response)
         
         # Update chat log
         self.chat_log.extend([
@@ -159,7 +161,7 @@ Important:
         tools_text = "\n\nAvailable Tools:\n" + "\n\n".join(tool_descriptions) if tool_descriptions else "No tools available."
         return f"{base_instruction}\n{tools_text}\n{usage_format}"
 
-    def _process_tool_calls(self, response_text: str) -> str:
+    def _process_tool_calls(self, response: BaseMessage) -> str:
         """Process any tool calls in the response text.
         
         Args:
@@ -168,314 +170,57 @@ Important:
         Returns:
             Updated text with tool calls replaced by their results
         """
-        # Find tool calls between <tool> tags
-        tool_pattern = r"<tool>\s*([\w_]+)\s*\((.*?)\)\s*</tool>"
-        matches = re.finditer(tool_pattern, response_text, re.DOTALL)
-        
-        for match in matches:
-            try:
-                tool_name = match.group(1).strip()
-                args_str = match.group(2).strip()
-                
-                if tool_name not in self.tools:
-                    continue
-                    
-                tool = self.tool_manager.get_tool(tool_name)
-                if not tool:
-                    continue
-                
-                # Parse arguments safely
-                args_dict = self._parse_tool_args(args_str, tool.parameters)
-                
-                # Execute tool
-                result = self.tool_executor.execute(tool_name, args_dict)
-                
-                if result.success:
-                    response_text = response_text.replace(
-                        match.group(0),
-                        str(result.result)
-                    )
-                else:
-                    response_text = response_text.replace(
-                        match.group(0),
-                        f"Error using {tool_name}: {result.error}"
-                    )
-            except Exception as e:
-                response_text = response_text.replace(
-                    match.group(0),
-                    f"Error processing {tool_name}: {str(e)}"
-                )
-                    
-        return response_text
-        
-    def _parse_tool_args(self, args_str: str, param_specs: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        """Safely parse tool arguments from string.
-        
-        Args:
-            args_str: String containing tool arguments
-            param_specs: Parameter specifications from the tool
-            
-        Returns:
-            Dictionary of parsed arguments
-            
-        Raises:
-            ValueError: If argument parsing fails
-        """
-        args_dict = {}
-        
-        # Split into individual parameter assignments
-        param_pattern = r'(\w+)\s*=\s*(.+?)(?=\s*(?:\w+\s*=|$))'
-        param_matches = re.finditer(param_pattern, args_str)
-        
-        for param_match in param_matches:
-            param_name = param_match.group(1).strip()
-            param_value_str = param_match.group(2).strip()
-            
-            if param_name not in param_specs:
-                continue
-                
-            # Get expected type
-            param_type = param_specs[param_name].get("type", "Any")
-            
-            try:
-                # Parse value based on type
-                if param_type == "str":
-                    # Remove quotes and unescape
-                    if param_value_str.startswith('"') and param_value_str.endswith('"'):
-                        param_value = param_value_str[1:-1].encode().decode('unicode_escape')
-                    else:
-                        raise ValueError(f"String parameter {param_name} must be quoted")
-                elif param_type == "int":
-                    param_value = int(param_value_str)
-                elif param_type == "float":
-                    param_value = float(param_value_str)
-                elif param_type == "bool":
-                    param_value = param_value_str.lower() == "true"
-                elif param_type == "list":
-                    param_value = self._parse_list_safely(param_value_str, param_name)
-                elif param_type == "dict":
-                    param_value = self._parse_dict_safely(param_value_str, param_name)
-                else:
-                    raise ValueError(f"Unsupported parameter type: {param_type}")
-                    
-                args_dict[param_name] = param_value
-                
-            except Exception as e:
-                raise ValueError(f"Failed to parse parameter {param_name}: {str(e)}")
-        
-        return args_dict
-        
-    def _parse_list_safely(self, list_str: str, param_name: str) -> List[Any]:
-        """Safely parse a list string without using eval.
-        
-        Args:
-            list_str: String containing list (e.g., '["a", 1, true]')
-            param_name: Parameter name for error messages
-            
-        Returns:
-            Parsed list
-            
-        Raises:
-            ValueError: If list format is invalid
-        """
-        if not (list_str.startswith("[") and list_str.endswith("]")):
-            raise ValueError(f"List parameter {param_name} must be in square brackets")
-            
-        # Empty list
-        if list_str == "[]":
-            return []
-            
-        # Remove brackets and split by commas, handling nested structures
-        content = list_str[1:-1].strip()
-        if not content:
-            return []
-            
-        items = []
-        current_item = ""
-        bracket_count = 0
-        brace_count = 0
-        in_string = False
-        escape_next = False
-        
-        for char in content:
-            if escape_next:
-                current_item += char
-                escape_next = False
-                continue
-                
-            if char == "\\":
-                current_item += char
-                escape_next = True
-                continue
-                
-            if char == '"' and not escape_next:
-                in_string = not in_string
-                current_item += char
-            elif char == "[":
-                bracket_count += 1
-                current_item += char
-            elif char == "]":
-                bracket_count -= 1
-                current_item += char
-            elif char == "{":
-                brace_count += 1
-                current_item += char
-            elif char == "}":
-                brace_count -= 1
-                current_item += char
-            elif char == "," and not in_string and bracket_count == 0 and brace_count == 0:
-                items.append(current_item.strip())
-                current_item = ""
+        if isinstance(response, AIMessage) and response.tool_calls:
+            tool_result = self.tool_node.invoke({"messages": [response]})
+            return tool_result["messages"][-1].content
+        else:
+            return response.content
+    
+    def _get_langchain_tools(self) -> List[Any]:
+        """Get a list of langchain tools from the tool manager."""
+        langchain_tools = []
+        for tool_name in self.tools:
+            tool = self.tool_manager.get_tool(tool_name)
+            if tool:
+                langchain_tools.append(self._convert_to_langchain_tool(tool))
+        return langchain_tools
+    
+    def _convert_to_langchain_tool(self, tool: Any) -> Any:
+        """Convert a custom tool to a langchain tool."""
+        @tool(tool.name, args_schema=self._create_pydantic_model(tool.parameters))
+        def _tool(**kwargs):
+            result = tool.execute(**kwargs)
+            if result.success:
+                return result.result
             else:
-                current_item += char
-                
-        if current_item:
-            items.append(current_item.strip())
-            
-        # Parse each item
-        parsed_items = []
-        for item in items:
-            if item.startswith('"') and item.endswith('"'):
-                # String
-                parsed_items.append(item[1:-1].encode().decode('unicode_escape'))
-            elif item.lower() == "true":
-                # Boolean true
-                parsed_items.append(True)
-            elif item.lower() == "false":
-                # Boolean false
-                parsed_items.append(False)
-            elif item.startswith("["):
-                # Nested list
-                parsed_items.append(self._parse_list_safely(item, f"{param_name} (nested)"))
-            elif item.startswith("{"):
-                # Nested dict
-                parsed_items.append(self._parse_dict_safely(item, f"{param_name} (nested)"))
+                return result.error
+        return _tool
+    
+    def _create_pydantic_model(self, parameters: List[Dict[str, Any]]) -> Any:
+        """Create a pydantic model from a list of parameters."""
+        from pydantic import BaseModel, create_model
+        fields = {}
+        for param in parameters:
+            param_name = param.name
+            param_type = param.type
+            if param_type == "str":
+                annotation = str
+            elif param_type == "int":
+                annotation = int
+            elif param_type == "float":
+                annotation = float
+            elif param_type == "bool":
+                annotation = bool
+            elif param_type == "list":
+                annotation = List
+            elif param_type == "dict":
+                annotation = Dict
             else:
-                # Try number
-                try:
-                    if "." in item:
-                        parsed_items.append(float(item))
-                    else:
-                        parsed_items.append(int(item))
-                except ValueError:
-                    raise ValueError(f"Invalid list item in {param_name}: {item}")
-                    
-        return parsed_items
-        
-    def _parse_dict_safely(self, dict_str: str, param_name: str) -> Dict[str, Any]:
-        """Safely parse a dictionary string without using eval.
-        
-        Args:
-            dict_str: String containing dictionary (e.g., '{"key": "value"}')
-            param_name: Parameter name for error messages
+                annotation = Any
             
-        Returns:
-            Parsed dictionary
-            
-        Raises:
-            ValueError: If dictionary format is invalid
-        """
-        if not (dict_str.startswith("{") and dict_str.endswith("}")):
-            raise ValueError(f"Dictionary parameter {param_name} must be in curly braces")
-            
-        # Empty dict
-        if dict_str == "{}":
-            return {}
-            
-        # Remove braces
-        content = dict_str[1:-1].strip()
-        if not content:
-            return {}
-            
-        # Split into key-value pairs
-        pairs = []
-        current_pair = ""
-        bracket_count = 0
-        brace_count = 0
-        in_string = False
-        escape_next = False
-        
-        for char in content:
-            if escape_next:
-                current_pair += char
-                escape_next = False
-                continue
-                
-            if char == "\\":
-                current_pair += char
-                escape_next = True
-                continue
-                
-            if char == '"' and not escape_next:
-                in_string = not in_string
-                current_pair += char
-            elif char == "[":
-                bracket_count += 1
-                current_pair += char
-            elif char == "]":
-                bracket_count -= 1
-                current_pair += char
-            elif char == "{":
-                brace_count += 1
-                current_pair += char
-            elif char == "}":
-                brace_count -= 1
-                current_pair += char
-            elif char == "," and not in_string and bracket_count == 0 and brace_count == 0:
-                pairs.append(current_pair.strip())
-                current_pair = ""
+            if param.required:
+                fields[param_name] = (annotation, ...)
             else:
-                current_pair += char
-                
-        if current_pair:
-            pairs.append(current_pair.strip())
-            
-        # Parse each key-value pair
-        parsed_dict = {}
-        for pair in pairs:
-            # Split key and value
-            key_value = pair.split(":", 1)
-            if len(key_value) != 2:
-                raise ValueError(f"Invalid dictionary pair in {param_name}: {pair}")
-                
-            key_str = key_value[0].strip()
-            value_str = key_value[1].strip()
-            
-            # Parse key (must be a string)
-            if not (key_str.startswith('"') and key_str.endswith('"')):
-                raise ValueError(f"Dictionary key must be a quoted string in {param_name}: {key_str}")
-            key = key_str[1:-1].encode().decode('unicode_escape')
-            
-            # Parse value
-            if value_str.startswith('"') and value_str.endswith('"'):
-                # String
-                value = value_str[1:-1].encode().decode('unicode_escape')
-            elif value_str.lower() == "true":
-                # Boolean true
-                value = True
-            elif value_str.lower() == "false":
-                # Boolean false
-                value = False
-            elif value_str.startswith("["):
-                # Nested list
-                value = self._parse_list_safely(value_str, f"{param_name} (nested)")
-            elif value_str.startswith("{"):
-                # Nested dict
-                value = self._parse_dict_safely(value_str, f"{param_name} (nested)")
-            else:
-                # Try number
-                try:
-                    if "." in value_str:
-                        value = float(value_str)
-                    else:
-                        value = int(value_str)
-                except ValueError:
-                    raise ValueError(f"Invalid dictionary value in {param_name}: {value_str}")
-                    
-            parsed_dict[key] = value
-            
-        return parsed_dict
-
-
-#Example of how to use this class
-agent = BaseAgent(model_manager, tool_manager, "assistant", "Your instructions here", ["tool1", "tool2"], {"temperature": 0.7, "top_p": 0.9, "top_k": 50, "max_output_tokens": 32000})
+                fields[param_name] = (Optional[annotation], param.default)
+        
+        return create_model("ToolArgs", **fields)

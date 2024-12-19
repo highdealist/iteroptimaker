@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List
 from dataclasses import dataclass, field
+from langchain_core.tools import tool
 
 @dataclass
 class ToolParameter:
