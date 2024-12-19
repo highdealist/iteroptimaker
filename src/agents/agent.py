@@ -118,9 +118,9 @@ class BaseAgent(ABC):
                 params = tool.parameters
                 param_docs = []
                 for param_name, param_spec in params.items():
-                    param_type = param_spec.get("type", "Any")
-                    param_desc = param_spec.get("description", "")
-                    param_required = param_spec.get("required", False)
+                    param_type = param_spec.type
+                    param_desc = param_spec.description
+                    param_required = param_spec.required
                     param_docs.append(f"    - {param_name} ({param_type}{'*' if param_required else ''}): {param_desc}")
                 
                 # Format tool documentation
