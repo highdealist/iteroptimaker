@@ -68,7 +68,7 @@ class BaseWorkflow(ABC):
         self,
         task: Dict[str, Any],
         result: Dict[str, Any],
-        meta Optional[Dict[str, Any]] = None,
+        meta: Optional[Dict[str, Any]] = None,
         chat_history: Optional[List[BaseMessage]] = None
     ) -> None:
         """Record an execution in the history.
@@ -82,6 +82,6 @@ class BaseWorkflow(ABC):
         self.execution_history.append({
             "task": task,
             "result": result,
-            "metadata": metadata or {},
+            "metadata": meta or {},
             "chat_history": chat_history or []
         })
