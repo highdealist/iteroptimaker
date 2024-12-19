@@ -33,7 +33,7 @@ class BaseAgent(ABC):
         self.model_config = model_config
         self.name = name or agent_type.capitalize()
         self.chat_log = []
-        self.tool_node = ToolNode(self._get_langchain_tools())
+        self.tool_node = self._get_langchain_tools()
         
     @abstractmethod
     def analyze(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -81,16 +81,11 @@ class BaseAgent(ABC):
         # Add the input to chat log
         messages = self.chat_log + [{"role": "user", "content": user_input}]
         
-        # Generate initial response
-        response = model.chat(
-            messages,
-            context=context,
-            tools=self._get_langchain_tools(),
-            **self.model_config
-        )
+        # Invoke the tool node
+        tool_result = self.tool_node.invoke({"messages": messages, "context": context, "model": model, **self.model_config})
         
-        # Process any tool calls in the response
-        response_text = self._process_tool_calls(response)
+        # Extract the final response
+        response_text = tool_result["messages"][-1].content
         
         # Update chat log
         self.chat_log.extend([
@@ -159,66 +154,6 @@ Important:
         tools_text = "\n\nAvailable Tools:\n" + "\n\n".join(tool_descriptions) if tool_descriptions else "No tools available."
         return f"{base_instruction}\n{tools_text}\n{usage_format}"
 
-    def _process_tool_calls(self, response: BaseMessage) -> str:
-        """Process any tool calls in the response text.
-        
-        Args:
-            response_text: The text to process for tool calls
-            
-        Returns:
-            Updated text with tool calls replaced by their results
-        """
-        if isinstance(response, AIMessage) and response.tool_calls:
-            tool_result = self.tool_node.invoke({"messages": [response]})
-            return tool_result["messages"][-1].content
-        else:
-            return response.content
-    
-    def _get_langchain_tools(self) -> List[Any]:
-        """Get a list of langchain tools from the tool manager."""
-        langchain_tools = []
-        for tool_name in self.tools:
-            tool = self.tool_manager.get_tool(tool_name)
-            if tool:
-                langchain_tools.append(self._convert_to_langchain_tool(tool))
-        return langchain_tools
-    
-    def _convert_to_langchain_tool(self, tool: Any) -> Any:
-        """Convert a custom tool to a langchain tool."""
-        @tool(tool.name, args_schema=self._create_pydantic_model(tool.parameters))
-        def _tool(**kwargs):
-            result = tool.execute(**kwargs)
-            if result.success:
-                return result.result
-            else:
-                return result.error
-        return _tool
-    
-    def _create_pydantic_model(self, parameters: List[Any]) -> Any:
-        """Create a pydantic model from a list of parameters."""
-        from pydantic import BaseModel, create_model
-        fields = {}
-        for param in parameters:
-            param_name = param.name
-            param_type = param.type
-            if param_type == "str":
-                annotation = str
-            elif param_type == "int":
-                annotation = int
-            elif param_type == "float":
-                annotation = float
-            elif param_type == "bool":
-                annotation = bool
-            elif param_type == "list":
-                annotation = List
-            elif param_type == "dict":
-                annotation = Dict
-            else:
-                annotation = Any
-            
-            if param.required:
-                fields[param_name] = (annotation, ...)
-            else:
-                fields[param_name] = (Optional[annotation], param.default)
-        
-        return create_model("ToolArgs", **fields)
+    def _get_langchain_tools(self) -> Optional[ToolNode]:
+        """Get the ToolNode instance from the tool manager."""
+        return self.tool_manager.get_tool_node()
