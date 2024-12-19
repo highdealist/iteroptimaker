@@ -1,7 +1,16 @@
 """Base tool class defining the interface for all tools."""
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
-from dataclasses import dataclass
+from typing import Any, Dict, Optional, List
+from dataclasses import dataclass, field
+
+@dataclass
+class ToolParameter:
+    """Defines a parameter for a tool."""
+    name: str
+    type: str
+    description: str
+    required: bool = False
+    default: Optional[Any] = None
 
 @dataclass
 class ToolResult:
@@ -41,18 +50,10 @@ class BaseTool(ABC):
     
     @property
     @abstractmethod
-    def parameters(self) -> Dict[str, Dict[str, Any]]:
+    def parameters(self) -> List[ToolParameter]:
         """Get the tool's parameter specifications.
         
         Returns:
-            Dictionary mapping parameter names to their specifications:
-            {
-                "param_name": {
-                    "type": str,  # Parameter type
-                    "description": str,  # Parameter description
-                    "required": bool,  # Whether parameter is required
-                    "default": Any  # Default value if any
-                }
-            }
+            List of ToolParameter objects
         """
         pass
