@@ -1,15 +1,16 @@
 """Web search tool implementation."""
 from typing import Dict, Any
-from .base_tool import BaseTool, ToolResult
-from ..config import TIMEOUT
+from ..base_tool import BaseTool, ToolResult
+#from ...config import TIMEOUT
 
 class SearchTool(BaseTool):
     """Tool for performing web searches."""
+    TIMEOUT = 2
     
     def __init__(self, search_manager):
         super().__init__(
             name="web_search",
-            description="Performs web searches and returns relevant results"
+            description="Performs web searches and returns relevant results."
         )
         self.search_manager = search_manager
 
@@ -30,7 +31,7 @@ class SearchTool(BaseTool):
             "timeout_seconds": {
                 "type": "integer",
                 "description": "Maximum time to wait for results",
-                "default": TIMEOUT
+                "default": self.TIMEOUT
             }
         }
 
@@ -45,7 +46,7 @@ class SearchTool(BaseTool):
                 )
 
             num_results = kwargs.get("num_results", 10)
-            timeout_seconds = kwargs.get("timeout_seconds", TIMEOUT)
+            timeout_seconds = kwargs.get("timeout_seconds", self.TIMEOUT)
 
             results = self.search_manager.search(
                 query,

@@ -19,7 +19,7 @@ class ToolManager:
         """Initialize tool classes lazily to avoid circular imports."""
         try:
             # Import tools lazily
-            from .search_tool import SearchTool
+            from .web_search_tools.search_tools import SearchTool
             from .code_analysis_tool import CodeAnalysisTool
             from .read_document import ReadDocumentTool
             

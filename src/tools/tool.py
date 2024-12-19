@@ -13,7 +13,7 @@ class BaseTool(ABC):
     @abstractmethod
     def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute the tool with the given parameters.
+        Execute the tool with the given parameters.  
         
         Args:
             params: Tool parameters

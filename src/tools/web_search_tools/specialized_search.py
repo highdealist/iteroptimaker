@@ -4,7 +4,7 @@ import logging
 from typing import List, Dict, Optional
 import arxiv
 from datetime import datetime, timedelta
-from .content_extractor import WebContentExtractor
+from ..tools.content_extractor import WebContentExtractor
 from .web_search import SearchResult
 
 # Configure logging

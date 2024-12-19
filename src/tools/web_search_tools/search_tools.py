@@ -1,6 +1,6 @@
 """Tools for specialized search functionality."""
 from typing import Dict, Any, List, Optional
-from .base_tool import BaseTool, ToolResult
+from ..base_tool import BaseTool, ToolResult
 from .specialized_search import FOIASearchProvider, ArXivSearchProvider
 import asyncio
 

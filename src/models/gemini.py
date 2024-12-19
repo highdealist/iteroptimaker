@@ -1,18 +1,61 @@
 """
-Gemini model implementation.
+Gemini model implementation with function calling, env var initialization,
+improved error handling, logging, and model selection.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import google.generativeai as genai
+from google.generativeai.types import GenerateContentResponse
 import logging
-from .base.model import BaseModel
-from models.model_config import (
-    GEMINI_API_KEY,
-    SAFETY_SETTINGS,
-    GEMINI_PRO_MODEL,
-    GEMINI_FLASH_MODEL
+import os
+from .model import BaseModel
+from .model_config import (
+    MODEL_SETTINGS,
+    RETRY_SETTINGS,
+    MODEL_FALLBACKS,
 )
+import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type
+)
+from google.api_core import exceptions
 
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GEMINI_PROJECT_ID = os.getenv('GEMINI_PROJECT_ID')
+GEMINI_LOCATION = os.getenv('GEMINI_LOCATION', 'us-central1')
+GEMINI_PRO_MODEL = "gemini-pro"
+GEMINI_FLASH_MODEL = "gemini-2.0-flash-exp"
+SAFETY_SETTINGS = MODEL_SETTINGS["gemini"]["safety_settings"]
 logger = logging.getLogger(__name__)
+
+@retry(
+    stop=stop_after_attempt(RETRY_SETTINGS["max_retries"]),
+    wait=wait_exponential(
+        multiplier=RETRY_SETTINGS["initial_delay"],
+        max=RETRY_SETTINGS["max_delay"]
+    ),
+    retry=retry_if_exception_type((
+        ConnectionError,
+        TimeoutError,
+        exceptions.GoogleAPIError,
+        Exception
+    ))
+)
+def retry_generate(model, prompt: str, tools: Optional[List[Dict]] = None, **kwargs) -> GenerateContentResponse:
+    """Retry wrapper for generate_content"""
+    try:
+        response = model.generate_content(prompt, tools=tools, **kwargs)
+        if not response.text:
+            raise ValueError("Empty response received from Gemini API")
+        return response
+    except exceptions.GoogleAPIError as e:
+        logger.error(f"Google API Error during generation: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during generation: {e}")
+        raise
 
 class GeminiModel(BaseModel):
     """Implementation of the Gemini model interface."""
@@ -20,53 +63,98 @@ class GeminiModel(BaseModel):
     def __init__(self, model_config: Dict[str, Any]):
         super().__init__(model_config)
         self._setup_model()
+        self._history = []
         
     def _setup_model(self):
         """Initialize the Gemini model."""
-        genai.configure(api_key=GEMINI_API_KEY)
-        model_name = self.model_config.get("model_name", GEMINI_PRO_MODEL)
+        if not GEMINI_API_KEY and not (GEMINI_PROJECT_ID and GEMINI_LOCATION):
+            raise ValueError("Either GEMINI_API_KEY or both GEMINI_PROJECT_ID and GEMINI_LOCATION environment variables must be set")
+        
+        if GEMINI_API_KEY:
+            genai.configure(api_key=GEMINI_API_KEY)
+        else:
+            genai.configure(project=GEMINI_PROJECT_ID, location=GEMINI_LOCATION)
+            
+        model_name = self.model_config.get("model_name")
+        if not model_name:
+            model_name = GEMINI_FLASH_MODEL if self.model_config.get("use_flash", False) else GEMINI_PRO_MODEL
+        
         generation_config = {
             "temperature": self.model_config.get("temperature", 0.7),
             "top_p": self.model_config.get("top_p", 0.95),
             "top_k": self.model_config.get("top_k", 40),
-            "max_output_tokens": self.model_config.get("max_tokens", 8096),
+            "max_output_tokens": self.model_config.get("max_output_tokens", 8096),
         }
         
-        self._model = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config=generation_config,
-            safety_settings=SAFETY_SETTINGS
-        )
-        
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate text using the Gemini model."""
         try:
-            response = self._model.generate_content(prompt, **kwargs)
-            if not response.text:
-                raise ValueError("Empty response received from Gemini API")
-            return response.text
+            self._model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config=generation_config,
+                safety_settings=SAFETY_SETTINGS
+            )
+            logger.info(f"Initialized Gemini model: {model_name}")
+        except Exception as e:
+            logger.error(f"Error initializing Gemini model: {e}")
+            raise
+        
+    def generate(self, prompt: str, tools: Optional[List[Dict]] = None, **kwargs) -> str:
+        """Generate text using the Gemini model with retry logic and function calling."""
+        try:
+            response = retry_generate(self._model, prompt, tools=tools, **kwargs)
+            if response.candidates and response.candidates[0].content.parts:
+                return response.candidates[0].content.parts[0].text
+            else:
+                raise ValueError("No text content in the response")
         except Exception as e:
             logger.error(f"Error generating content with Gemini: {str(e)}")
             raise
         
-    def chat(self, messages: List[Dict[str, Any]], **kwargs) -> str:
-        """Generate response in a chat context using Gemini."""
+    def chat(self, messages: List[Dict[str, Any]], tools: Optional[List[Dict]] = None, **kwargs) -> str:
+        """Generate response in a chat context using Gemini with function calling."""
         try:
-            chat = self._model.start_chat()
+            chat = self._model.start_chat(history=self._history)
+            
             for message in messages:
                 if message["role"] == "user":
-                    chat.send_message(message["content"])
+                    response = chat.send_message(message["content"], tools=tools)
+                    self._history.append({"role": "user", "content": message["content"]})
+                    if response.text:
+                        self._history.append({"role": "assistant", "content": response.text})
+                    elif response.candidates and response.candidates[0].content.parts:
+                        self._history.append({"role": "assistant", "content": response.candidates[0].content.parts[0].text})
+                    else:
+                        raise ValueError("Empty response received from Gemini chat API")
                 elif message["role"] == "system":
-                    # Convert system messages to user messages with a special prefix
-                    chat.send_message(f"[System Instruction]: {message['content']}")
+                    # Handle system messages by prepending to user messages
+                    next_user_msg = next(
+                        (m for m in messages[messages.index(message):] if m["role"] == "user"),
+                        None
+                    )
+                    if next_user_msg:
+                        modified_content = f"{message['content']}\n\nUser: {next_user_msg['content']}"
+                        response = chat.send_message(modified_content, tools=tools)
+                        self._history.append({"role": "user", "content": modified_content})
+                        if response.text:
+                            self._history.append({"role": "assistant", "content": response.text})
+                        elif response.candidates and response.candidates[0].content.parts:
+                            self._history.append({"role": "assistant", "content": response.candidates[0].content.parts[0].text})
+                        else:
+                            raise ValueError("Empty response received from Gemini chat API")
             
-            response = chat.send_message(messages[-1]["content"])
-            if not response.text:
+            if response.text:
+                return response.text
+            elif response.candidates and response.candidates[0].content.parts:
+                return response.candidates[0].content.parts[0].text
+            else:
                 raise ValueError("Empty response received from Gemini chat API")
-            return response.text
+            
         except Exception as e:
             logger.error(f"Error in Gemini chat: {str(e)}")
             raise
+        
+    def reset_chat(self):
+        """Reset the chat history."""
+        self._history = []
         
     @property
     def model_type(self) -> str:

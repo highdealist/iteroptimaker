@@ -6,7 +6,7 @@ import sys
 import os
 # Get the parent directory
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-from ..config import GEMINI_API_KEY, GOOGLE_CUSTOM_SEARCH_API_KEY, GOOGLE_CUSTOM_SEARCH_ENGINE_ID
+from ...config import GEMINI_API_KEY, GOOGLE_CUSTOM_SEARCH_API_KEY, GOOGLE_CUSTOM_SEARCH_ENGINE_ID
 
 # Add the parent directory to sys.path
 sys.path.insert(0, parent_dir)

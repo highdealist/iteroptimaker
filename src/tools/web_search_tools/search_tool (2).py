@@ -3,7 +3,7 @@ Search tool implementation.
 """
 from typing import Dict, Any, List
 import requests
-from ..base.tool import BaseTool
+from ..base_tool import BaseTool
 from ...config import TAVILY_API_KEY
 
 class SearchTool(BaseTool):
