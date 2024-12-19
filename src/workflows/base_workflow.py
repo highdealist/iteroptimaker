@@ -13,7 +13,7 @@ class WorkflowState:
     output: str = ""
     context: str = ""
     intermediate_results: Dict[str, Any] = field(default_factory=dict)
-    meta Dict[str, Any] = field(default_factory=dict)
+    meta: Dict[str, Any] = field(default_factory=dict)
     chat_history: List[BaseMessage] = field(default_factory=list)
 
 
