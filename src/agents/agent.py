@@ -171,7 +171,7 @@ Important:
             context: str
             intermediate_results: Dict[str, Any]
             output: str
-            meta Dict[str, Any]
+            meta: Dict[str, Any]
             chat_history: List[BaseMessage]
         
         def _generate_response(state):
