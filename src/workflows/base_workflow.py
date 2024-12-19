@@ -5,6 +5,11 @@ from dataclasses import dataclass, field
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
 from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph
+from typing_extensions import TypedDict, Annotated
+import operator
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import END
 
 @dataclass
 class WorkflowState:
@@ -31,6 +36,7 @@ class BaseWorkflow(ABC):
         self.max_iterations = max_iterations
         self.execution_history = []
         self.tool_node = self.tool_manager.get_tool_node()
+        self.graph = self._create_graph()
         
     @abstractmethod
     def run(self, task: Dict[str, Any], **kwargs) -> Dict[str, Any]:
@@ -85,3 +91,18 @@ class BaseWorkflow(ABC):
             "metadata": meta or {},
             "chat_history": chat_history or []
         })
+        
+    def _create_graph(self) -> StateGraph:
+        """Create a LangGraph StateGraph."""
+        
+        class GraphState(TypedDict):
+            """State for the LangGraph."""
+            input: str
+            output: str
+            context: str
+            intermediate_results: Dict[str, Any]
+            meta: Dict[str, Any]
+            chat_history: List[BaseMessage]
+        
+        builder = StateGraph(GraphState)
+        return builder

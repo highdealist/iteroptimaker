@@ -8,6 +8,11 @@ import logging
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
 from ..agents.base.agent import BaseAgent
+from langgraph.graph import StateGraph
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import BaseMessage
+from typing_extensions import TypedDict, Annotated
+import operator
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +24,7 @@ class WorkflowState:
     intermediate_results: Dict[str, Any] = None
     output: str = ""
     metadata: Dict[str, Any] = None
+    chat_history: List[BaseMessage] = None
 
 
 class BaseWorkflow(ABC):
@@ -36,6 +42,8 @@ class BaseWorkflow(ABC):
         self.agents = agents
         self.config = config or {}
         self.state = None
+        self.tool_node = self.tool_manager.get_tool_node()
+        self.graph = self._create_graph()
 
     @abstractmethod
     def initialize(self, input_text: str, context: str = "") -> WorkflowState:
@@ -81,3 +89,18 @@ class BaseWorkflow(ABC):
     def register_agent(self, name: str, agent: BaseAgent) -> None:
         """Register a new agent."""
         self.agents[name] = agent
+        
+    def _create_graph(self) -> StateGraph:
+        """Create a LangGraph StateGraph."""
+        
+        class GraphState(TypedDict):
+            """State for the LangGraph."""
+            input: str
+            context: str
+            intermediate_results: Dict[str, Any]
+            output: str
+            metadata: Dict[str, Any]
+            chat_history: List[BaseMessage]
+        
+        builder = StateGraph(GraphState)
+        return builder
