@@ -23,7 +23,7 @@ class WorkflowState:
     context: str = ""
     intermediate_results: Dict[str, Any] = None
     output: str = ""
-    meta Dict[str, Any] = None
+    meta: Dict[str, Any] = None
     chat_history: List[BaseMessage] = None
 
 
@@ -99,7 +99,7 @@ class BaseWorkflow(ABC):
             context: str
             intermediate_results: Dict[str, Any]
             output: str
-            meta Dict[str, Any]
+            meta: Dict[str, Any]
             chat_history: List[BaseMessage]
         
         builder = StateGraph(GraphState)
