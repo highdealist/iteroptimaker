@@ -139,7 +139,7 @@ chart_agent = create_agent(
 chart_node = functools.partial(agent_node, agent=chart_agent, name="Chart Generator")
 
 # Define the tools
-from .tools import web_search  # Import web_search from tools.py
+from ..tools import web_search_tool  # Import web_search from tools.py
 tools = [tavily_tool, python_repl, web_search]  # Add web_search to the tools
 tool_executor = ToolExecutor(tools)
 

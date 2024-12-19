@@ -4,15 +4,15 @@ Agent manager for creating and managing different types of agents.
 from typing import Dict, Any, Optional
 import json
 import os
-from .agent import BaseAgent
-from .specialized_agents import (
+from agent import BaseAgent
+from coding_crew_agents import (
     DeveloperAgent,
     CodeReviewerAgent,
     SecurityReviewerAgent,
     TechLeadAgent
 )
-from ...models.model_manager import ModelManager
-from ...tools.tool_manager import ToolManager
+from ..models.model_manager import ModelManager
+from ..tools.tool_manager import ToolManager
 
 class AgentManager:
     """Manages the creation and lifecycle of agents."""

@@ -4,15 +4,17 @@ improved error handling, logging, and model selection.
 """
 from typing import Dict, Any, List, Optional
 import google.generativeai as genai
+from google import genai
 from google.generativeai.types import GenerateContentResponse
-import logging
-import os
-from .model import BaseModel
-from .model_config import (
-    MODEL_SETTINGS,
-    RETRY_SETTINGS,
-    MODEL_FALLBACKS,
+import logging as logger
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type
 )
+import os
+from model import BaseModel
 import time
 from tenacity import (
     retry,
@@ -20,15 +22,49 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type
 )
+
 from google.api_core import exceptions
 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-GEMINI_PROJECT_ID = os.getenv('GEMINI_PROJECT_ID')
-GEMINI_LOCATION = os.getenv('GEMINI_LOCATION', 'us-central1')
-GEMINI_PRO_MODEL = "gemini-pro"
-GEMINI_FLASH_MODEL = "gemini-2.0-flash-exp"
-SAFETY_SETTINGS = MODEL_SETTINGS["gemini"]["safety_settings"]
-logger = logging.getLogger(__name__)
+#Get system_instructions from the corresponding agent type
+def get_system_instructions(Agent()) -> str:
+    """Get system instructions based on the agent type."""
+    if agent_type == AgentType.GEMINI:
+        return "You are a helpful AI assistant."
+
+
+
+
+system_instructions = "You are a helpful AI assistant."
+
+MODEL_FALLBACKS = {
+    "gemini": ["gemini-pro-1.5-latest", "gemini-flash-1.5-latest", "claude-3-opus"],
+    "gpt-4": ["gemini-pro", "gpt-3.5-turbo", "claude-3-opus"],
+    "claude-3-opus": ["gpt-4", "gemini-pro", "gpt-3.5-turbo"]
+}
+
+MODEL_SETTINGS = {
+    "gemini": {
+        "system_instructions": system_instructions,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "top_k": 40,
+        "max_output_tokens": 16000,
+        "safety_settings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+        ]
+    },
+}
+
+# Retry settings
+RETRY_SETTINGS = {
+    "max_retries": 3,
+    "initial_delay": 1,
+    "backoff_factor": 2,
+    "max_delay": 10
+}
 
 @retry(
     stop=stop_after_attempt(RETRY_SETTINGS["max_retries"]),
@@ -78,6 +114,9 @@ class GeminiModel(BaseModel):
         model_name = self.model_config.get("model_name")
         if not model_name:
             model_name = GEMINI_FLASH_MODEL if self.model_config.get("use_flash", False) else GEMINI_PRO_MODEL
+        system_instruction = self.model_config.get("system_instruction")
+        if system_instruction:
+            genai.configure(system_instruction=system_instruction)
         
         generation_config = {
             "temperature": self.model_config.get("temperature", 0.7),

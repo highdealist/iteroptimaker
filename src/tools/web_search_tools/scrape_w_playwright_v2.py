@@ -13,7 +13,7 @@ import random
 from functools import wraps
 import time
 import rate_limiter
-from rate_limiter import AsyncLimiter
+from aiolimiter import AsyncLimiter # Corrected import
 
 retries=3
 timeout=30

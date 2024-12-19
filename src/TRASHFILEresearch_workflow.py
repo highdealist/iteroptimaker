@@ -1,7 +1,7 @@
 import logging
 import re
-from tools.web_search_tools.search_manager_LATESTWORKING import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
-from .models.gemini import GeminiModel
+from tools.web_search_tools.web_search_tool_v2 import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
+from models.gemini import GeminiModel
 from typing import List, Dict, Any
 
 logging.basicConfig(
@@ -46,7 +46,7 @@ def process_user_input(user_input: str) -> str:
 
     logger.info("Initializing Gemini model")
     researcher_model = GeminiModel(
-        model_config={"model_name": "gemini-pro", "temperature": 0.7},
+        model_config={"model_name": "gemini-2.0-flash-exp", "temperature": 0.7},
         system_message=researcher_system_message
     )
 
@@ -117,3 +117,8 @@ def process_user_input(user_input: str) -> str:
     final_response = researcher_model.chat([{"role": "user", "content": final_prompt}])
     logger.info("Process completed successfully")
     return final_response
+
+if __name__ == "__main__":
+    user_input = "What are the benefits of using renewable energy sources?"
+    response = process_user_input(user_input)
+    print(response)

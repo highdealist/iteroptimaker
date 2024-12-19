@@ -4,8 +4,12 @@ import logging
 from typing import List, Dict, Optional
 import arxiv
 from datetime import datetime, timedelta
-from ..tools.content_extractor import WebContentExtractor
-from .web_search import SearchResult
+from content_extractor import WebContentExtractor
+from web_search_tool_v2 import SearchResult
+import asyncio
+from aiohttp import ClientSession
+import json
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -19,7 +23,7 @@ class FOIASearchProvider:
     def __init__(self):
         self.content_extractor = WebContentExtractor()
     
-    async def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
+    def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
         """Search FOIA.gov for records matching the query.
         
         Args:
@@ -72,7 +76,7 @@ class ArXivSearchProvider:
     def __init__(self):
         self.client = arxiv.Client()
     
-    async def get_latest_papers(self, category: str = None, max_results: int = 10,
+    def get_latest_papers(self, category: str = None, max_results: int = 10,
                               days: int = 7) -> List[SearchResult]:
         """Get the latest arXiv papers, optionally filtered by category.
         
@@ -130,8 +134,7 @@ class ArXivSearchProvider:
         except Exception as e:
             logger.error(f"Error fetching arXiv papers: {e}")
             return []
-    
-    async def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
+    def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
         """Search arXiv papers by query.
         
         Args:
@@ -176,3 +179,16 @@ class ArXivSearchProvider:
         except Exception as e:
             logger.error(f"Error searching arXiv: {e}")
             return []
+
+#Example usage
+# Initialize search providers
+foia_search_provider = FOIASearchProvider()
+arxiv_search_provider = ArXivSearchProvider()
+
+# Search FOIA.gov for records
+foia_results = foia_search_provider.search("vaccine")
+logger.info(f"FOIA.gov search results: {foia_results}")
+
+# Get latest arXiv papers
+latest_papers = arxiv_search_provider.get_latest_papers(category="cs.AI", max_results=5)
+logger.info(f"Latest arXiv papers: {latest_papers}")

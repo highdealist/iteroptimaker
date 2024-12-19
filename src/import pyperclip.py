@@ -1,9 +1,27 @@
 import pyperclip
 import google.generativeai as genai
 import dotenv
+import os
+from models.gemini import GeminiModel
+import agents
+from agents.researcher_agent import ResearcherAgent
+from agents.writer_agent import WriterAgent
 
-load.
+# Import the GenerateContentResponse class from the genai module
+from google.generativeai.types import GenerateContentResponse
 
+# Create a GenerateContentResponse object using the WriterAgent
+response = genai.GenerateContentResponse(agent=agents.WriterAgent())
+
+# Print the response object
+print(response)
+
+
+# Load environment variables from .env file
+dotenv.load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Function to get text from clipboard
 def get_clipboard_text():
     return pyperclip.paste()
 
@@ -15,15 +33,13 @@ def generate_prompt(clipboard_text, extra_instructions):
     Provide clear, concise guidance and explain any important considerations."""
     return template
 
+# Function to call the Gemini API, setting system_instructions according to the agent_name (the agent is in large part defined by its system_instructions)
 def call_gemini(prompt):
-    # Ensure API key is set - ideally, don't hardcode, use environment variables
-    api_key = "YOUR_API_KEY"  # Or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("API key not found. Set GOOGLE_API_KEY environment variable.")
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-pro')
+    model = GeminiModel({"model_name": "gemini-2.0-flash-exp", "temperature": 0.7})
     response = model.generate_content(prompt)
     return response.text
+
+
 
 
 def main():
