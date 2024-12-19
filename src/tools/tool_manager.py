@@ -2,8 +2,9 @@
 Tool manager for creating and managing different tools.
 """
 from typing import Dict, Any, List, Optional, Type, Union
-from .base_tool import BaseTool
+from langchain_core.tools import BaseTool
 import logging
+from langgraph.prebuilt import ToolNode
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class ToolManager:
         self.tools: Dict[str, BaseTool] = {}
         self._tool_classes: Dict[str, Type[BaseTool]] = {}
         self._initialize_tools()
+        self.tool_node = None
         
     def _initialize_tools(self):
         """Initialize tool classes lazily to avoid circular imports."""
@@ -28,6 +30,9 @@ class ToolManager:
             self._register_tool("code_analysis", CodeAnalysisTool)
             self._register_tool("read_document", ReadDocumentTool)
             
+            # Initialize ToolNode
+            self.tool_node = ToolNode(list(self.tools.values()))
+            
         except Exception as e:
             logger.error(f"Failed to initialize tools: {e}")
             
@@ -35,25 +40,25 @@ class ToolManager:
         """Register a tool class."""
         if not issubclass(tool_class, BaseTool):
             raise ValueError(f"Tool class {tool_class.__name__} must inherit from BaseTool")
-        self._tool_classes[name] = tool_class
         
+        try:
+            tool_instance = tool_class()
+            self.tools[name] = tool_instance
+            self._tool_classes[name] = tool_class
+        except Exception as e:
+            logger.error(f"Failed to create tool instance for '{name}': {e}")
+            
     def get_tool(self, name: str) -> Optional[BaseTool]:
         """Get a tool instance by name."""
-        if name not in self.tools:
-            tool_class = self._tool_classes.get(name)
-            if tool_class is None:
-                logger.warning(f"Tool '{name}' not found")
-                return None
-            try:
-                self.tools[name] = tool_class()
-            except Exception as e:
-                logger.error(f"Failed to create tool '{name}': {e}")
-                return None
-        return self.tools[name]
+        return self.tools.get(name)
         
     def list_tools(self) -> List[str]:
         """List all available tool names."""
         return list(self._tool_classes.keys())
+    
+    def get_tool_node(self) -> Optional[ToolNode]:
+        """Get the ToolNode instance."""
+        return self.tool_node
         
     def cleanup(self):
         """Clean up all tool resources."""
