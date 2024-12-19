@@ -49,7 +49,29 @@ class BaseAgent(ABC):
         Returns:
             Dictionary containing analysis results
         """
-        pass
+        # Initialize the state
+        state = {
+            "input": task.get("content", str(task)),
+            "context": task.get("context", ""),
+            "chat_history": self.chat_log,
+            "intermediate_results": {},
+            "output": "",
+            "metadata": {}
+        }
+        
+        # Run the graph
+        result = self.graph.invoke(state)
+        
+        # Extract the final response
+        response_text = result["output"]
+        
+        # Update chat log
+        self.chat_log.extend([
+            {"role": "user", "content": task.get("content", str(task))},
+            {"role": "assistant", "content": response_text}
+        ])
+        
+        return {"content": response_text, "metadata": result.get("metadata", {})}
         
     def get_available_tools(self) -> List[str]:
         """Get list of tools available to this agent."""
@@ -67,41 +89,6 @@ class BaseAgent(ABC):
             True if task is valid, False otherwise
         """
         pass
-
-    def generate_response(self, user_input: str, context: str = "") -> str:
-        """Generate a response based on user input and context.
-        
-        Args:
-            user_input: The user's input message
-            context: Additional context for the response
-            
-        Returns:
-            The agent's response
-        """
-        
-        # Initialize the state
-        state = {
-            "input": user_input,
-            "context": context,
-            "chat_history": self.chat_log,
-            "intermediate_results": {},
-            "output": "",
-            "metadata": {}
-        }
-        
-        # Run the graph
-        result = self.graph.invoke(state)
-        
-        # Extract the final response
-        response_text = result["output"]
-        
-        # Update chat log
-        self.chat_log.extend([
-            {"role": "user", "content": user_input},
-            {"role": "assistant", "content": response_text}
-        ])
-        
-        return response_text
 
     def _construct_instructions(self, base_instruction: str) -> str:
         """Construct full instructions including available tools and usage format.
@@ -185,7 +172,7 @@ Important:
             # Extract the final response
             response_text = tool_result["messages"][-1].content
             
-            return {"output": response_text}
+            return {"output": response_text, "metadata": {}}
         
         builder = StateGraph(GraphState)
         builder.add_node("generate_response", _generate_response)
