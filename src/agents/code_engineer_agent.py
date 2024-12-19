@@ -179,10 +179,12 @@ class CodeEngineerAgent(BaseAgent):
         
         # Verify syntax
         if language.lower() == "python":
-            self.tool_manager.use_tool(
+            tool_result = self.tool_executor.execute(
                 "python_repl",
                 {"code": code, "action": "verify_syntax"}
             )
+            if not tool_result.success:
+                return f"Error verifying syntax: {tool_result.error}"
             
         return code
         

@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Optional
 import re
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
+from ..tools.tool_executor import ToolExecutor
 model_manager = ModelManager()
 tool_manager = ToolManager()
 
@@ -25,6 +26,7 @@ class BaseAgent(ABC):
     ):
         self.model_manager = model_manager
         self.tool_manager = tool_manager
+        self.tool_executor = ToolExecutor(tool_manager)
         self.agent_type = agent_type
         self.instruction = instruction
         self.tools = tools
@@ -185,22 +187,8 @@ Important:
                 # Parse arguments safely
                 args_dict = self._parse_tool_args(args_str, tool.parameters)
                 
-                # Validate required parameters
-                missing_params = []
-                for param_name, param_spec in tool.parameters.items():
-                    if param_spec.get("required", False) and param_name not in args_dict:
-                        missing_params.append(param_name)
-                
-                if missing_params:
-                    error_msg = f"Missing required parameters for {tool_name}: {', '.join(missing_params)}"
-                    response_text = response_text.replace(
-                        match.group(0),
-                        f"Error: {error_msg}"
-                    )
-                    continue
-                
                 # Execute tool
-                result = tool.execute(**args_dict)
+                result = self.tool_executor.execute(tool_name, args_dict)
                 
                 if result.success:
                     response_text = response_text.replace(
