@@ -7,7 +7,7 @@ import logging
 
 from ..models.model_manager import ModelManager
 from ..tools.tool_manager import ToolManager
-from ..agents.base.agent import BaseAgent
+# from ..agents.base.agent import BaseAgent # Removed
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage
@@ -23,7 +23,7 @@ class WorkflowState:
     context: str = ""
     intermediate_results: Dict[str, Any] = None
     output: str = ""
-    metadata: Dict[str, Any] = None
+    meta Dict[str, Any] = None
     chat_history: List[BaseMessage] = None
 
 
@@ -34,7 +34,7 @@ class BaseWorkflow(ABC):
         self,
         model_manager: ModelManager,
         tool_manager: ToolManager,
-        agents: Dict[str, BaseAgent],
+        agents: Dict[str, Any], # Changed from BaseAgent to Any
         config: Optional[Dict[str, Any]] = None
     ):
         self.model_manager = model_manager
@@ -82,11 +82,11 @@ class BaseWorkflow(ABC):
             logger.error(f"Workflow error: {e}")
             raise
 
-    def get_agent(self, name: str) -> Optional[BaseAgent]:
+    def get_agent(self, name: str) -> Optional[Any]: # Changed from BaseAgent to Any
         """Get an agent by name."""
         return self.agents.get(name)
 
-    def register_agent(self, name: str, agent: BaseAgent) -> None:
+    def register_agent(self, name: str, agent: Any) -> None: # Changed from BaseAgent to Any
         """Register a new agent."""
         self.agents[name] = agent
         
@@ -99,7 +99,7 @@ class BaseWorkflow(ABC):
             context: str
             intermediate_results: Dict[str, Any]
             output: str
-            metadata: Dict[str, Any]
+            meta Dict[str, Any]
             chat_history: List[BaseMessage]
         
         builder = StateGraph(GraphState)
