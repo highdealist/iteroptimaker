@@ -68,7 +68,7 @@ class BaseWorkflow(ABC):
         self,
         task: Dict[str, Any],
         result: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
+        meta Optional[Dict[str, Any]] = None,
         chat_history: Optional[List[BaseMessage]] = None
     ) -> None:
         """Record an execution in the history.
