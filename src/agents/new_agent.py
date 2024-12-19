@@ -68,7 +68,7 @@ class StaffingAgent(BaseAgent):
                 - agent_config: Complete agent configuration
                 - documentation: Agent documentation
                 - integration_guide: Integration instructions
-                - metadata: Additional configuration information
+                - meta Additional configuration information
         """
         if not self.validate_task(task):
             return {

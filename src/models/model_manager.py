@@ -52,10 +52,10 @@ class ModelManager:
         try:
             if self._model_classes[model_type] is None:
                 if model_type == "gemini":
-                    from gemini import GeminiModel
+                    from .gemini import GeminiModel
                     self._model_classes[model_type] = GeminiModel
                 elif model_type == "openai":
-                    from openai import OpenAIModel
+                    from .openai import OpenAIModel
                     self._model_classes[model_type] = OpenAIModel
             model_class = self._model_classes[model_type]
             model = model_class(config)

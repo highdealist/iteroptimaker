@@ -1,6 +1,6 @@
 """NHR (Next Human Response) agent for coordinating agent interactions and selecting next steps."""
 from typing import Dict, Any, List, Optional
-from agent import BaseAgent
+from .agent import BaseAgent
 
 class NHRAgent(BaseAgent):
     """Agent specialized in coordinating and selecting next steps in agent interactions."""
@@ -51,7 +51,7 @@ class NHRAgent(BaseAgent):
                 - selected_agent: The selected next agent
                 - reasoning: Explanation for the selection
                 - suggested_prompt: Suggested prompt for the selected agent
-                - metadata: Additional selection information
+                - meta Additional selection information
         """
         if not self.validate_task(task):
             return {

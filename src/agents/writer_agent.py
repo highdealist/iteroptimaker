@@ -1,6 +1,6 @@
 """Writer agent for generating and revising content."""
 from typing import Dict, Any, List, Optional
-from agent import BaseAgent
+from .agent import BaseAgent
 
 class WriterAgent(BaseAgent):
     """Agent specialized in writing and revising content."""
@@ -51,7 +51,7 @@ class WriterAgent(BaseAgent):
         Returns:
             Dictionary containing:
                 - content: The generated or revised content
-                - metadata: Additional information about the content
+                - meta Additional information about the content
         """
         if not self.validate_task(task):
             return {
