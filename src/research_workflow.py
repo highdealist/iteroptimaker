@@ -1,6 +1,6 @@
 import logging
 import re
-from ...id8r.src.tools.web_search_tools.search_manager_LATESTWORKING import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
+from tools.web_search_tools.search_manager_LATESTWORKING import SearchAPI, SearchManager, SearchProvider, SearchResult, initialize_search_manager
 from .models.gemini import GeminiModel
 from typing import List, Dict, Any
 
@@ -13,6 +13,8 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
     
 def extract_tool_call(text: str) -> Dict[str, str]:
     logger.debug(f"Attempting to extract tool call from text: {text}")

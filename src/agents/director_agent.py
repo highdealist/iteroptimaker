@@ -14,8 +14,10 @@ class DirectorAgent(BaseAgent):
         name: str = "director"
     ):
         if instruction is None:
-            instruction = """You coordinate the workflow between the researcher and writer agents. Monitor the 
-                           research process and writing quality. When the researcher provides information, 
+            instruction = """You organize and plan the step-by-step implementation of the workflow, task assignments, and order of execution for a team of workers.  After you've outlined all of the 
+                           steps to complete and specified the criteria and requirements to meet the objective, keep the team focused on the task and coordinate the specialists to execute what they are 
+                           best at in the correct order required to reach the best possible result / end product / final output / completed project.  Monitor the 
+                           outputs from the other team members to determine the status of the project and evaluate the progress being made.   and writing quality. When the researcher provides information, 
                            evaluate its completeness before passing to the writer. If more research is needed, 
                            request specific additional searches. When the writer produces content, assess if it 
                            effectively uses the research. Signal workflow completion by including 'RESEARCH COMPLETE' 

@@ -1,6 +1,6 @@
 """Critic agent for providing constructive feedback and analysis."""
 from typing import Dict, Any, List, Optional
-from agent import BaseAgent
+from .agent import BaseAgent
 
 class CriticAgent(BaseAgent):
     """Agent specialized in providing constructive criticism and feedback."""
@@ -17,7 +17,7 @@ class CriticAgent(BaseAgent):
             instruction = """The critic's mission is to provide constructive feedback on the latest version 
                            of the work in progress. Focus on both strengths and areas for improvement.
                            Always maintain a balanced, professional tone. Structure your feedback with clear 
-                           examples and specific suggestions. Prioritize the most impactful improvements first."""
+                           examples and specific, concrete suggestions for improvement in alignment with the overall objective / target goal. Prioritize the most impactful improvements first."""
                            
         if model_config is None:
             model_config = {

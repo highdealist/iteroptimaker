@@ -1,9 +1,25 @@
 """New agent for creating and configuring new specialized agents."""
 from typing import Dict, Any, List, Optional
-from .base.agent import BaseAgent
+from .agent import BaseAgent
 
-class NewAgent(BaseAgent):
-    """Agent specialized in creating and configuring new agents with specific capabilities."""
+# Store the current workflow code and structure in a string to serve as context for the StaffingAgent
+# Get current workflow structure
+import inspect
+import sys
+
+def get_current_workflow():
+    for frame_info in inspect.stack():
+        local_vars = frame_info.frame.f_locals
+        for var_name, var_value in local_vars.items():
+            if "workflow" in var_name.lower() and hasattr(var_value, "nodes"):
+                return str(var_value)
+    return "No workflow found"
+
+WORKFLOW_CONTEXT = get_current_workflow()
+
+
+class StaffingAgent(BaseAgent):
+    """Agent specialized in hiring (creating, configuring and coordinating) new agents with specific capabilities on the fly based on the current workload."""
     
     def __init__(
         self,
@@ -11,12 +27,13 @@ class NewAgent(BaseAgent):
         tool_manager,
         instruction: str = None,
         model_config: Dict[str, Any] = None,
-        name: str = "new"
+        name: str = "StaffingAgent"
     ):
         if instruction is None:
-            instruction = """Create and configure new specialized agents based on task requirements. 
+            instruction = f"""Create and configure new specialized agents based on task requirements. 
                            Define clear roles, capabilities, and interaction patterns. Ensure new agents 
-                           integrate seamlessly with existing workflow and maintain consistent standards."""
+                           integrate seamlessly with existing workflow and maintain consistent standards.
+                           \nCurrent workflow outline:  \n\n{WORKFLOW_CONTEXT}\n"""
                            
         if model_config is None:
             model_config = {
