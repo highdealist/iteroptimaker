@@ -4,12 +4,9 @@ Base agent implementation providing core functionality for all agent types.
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import re
-from ..models.model_manager import ModelManager
-from ..tools.tool_manager import ToolManager
+from ...models.model_manager import ModelManager
+from ...tools.tool_manager import ToolManager
 from langchain_core.messages import AIMessage, BaseMessage
-from langgraph.graph import StateGraph
-from typing_extensions import TypedDict
-import operator
 from langgraph.prebuilt import ToolNode
 model_manager = ModelManager()
 tool_manager = ToolManager()
@@ -36,7 +33,7 @@ class BaseAgent(ABC):
         self.model_config = model_config
         self.name = name or agent_type.capitalize()
         self.chat_log = []
-        self.graph = self._create_graph()
+        self.tool_node = self._get_langchain_tools()
         
     @abstractmethod
     def analyze(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -78,22 +75,17 @@ class BaseAgent(ABC):
         Returns:
             The agent's response
         """
+        model = self.model_manager.get_model(self.agent_type)
+        full_instruction = self._construct_instructions(self.instruction)
         
-        # Initialize the state
-        state = {
-            "input": user_input,
-            "context": context,
-            "chat_history": self.chat_log,
-            "intermediate_results": {},
-            "output": "",
-            "metadata": {}
-        }
+        # Add the input to chat log
+        messages = self.chat_log + [{"role": "user", "content": user_input}]
         
-        # Run the graph
-        result = self.graph.invoke(state)
+        # Invoke the tool node
+        tool_result = self.tool_node.invoke({"messages": messages, "context": context, "model": model, **self.model_config})
         
         # Extract the final response
-        response_text = result["output"]
+        response_text = tool_result["messages"][-1].content
         
         # Update chat log
         self.chat_log.extend([
@@ -162,33 +154,6 @@ Important:
         tools_text = "\n\nAvailable Tools:\n" + "\n\n".join(tool_descriptions) if tool_descriptions else "No tools available."
         return f"{base_instruction}\n{tools_text}\n{usage_format}"
 
-    def _create_graph(self) -> StateGraph:
-        """Create a LangGraph StateGraph."""
-        
-        class GraphState(TypedDict):
-            """State for the LangGraph."""
-            input: str
-            context: str
-            intermediate_results: Dict[str, Any]
-            output: str
-            meta Dict[str, Any]
-            chat_history: List[BaseMessage]
-        
-        def _generate_response(state):
-            """Generate a response using the LLM and tools."""
-            model = self.model_manager.get_model(self.agent_type)
-            full_instruction = self._construct_instructions(self.instruction)
-            messages = state["chat_history"] + [{"role": "user", "content": state["input"]}]
-            tool_node = self.tool_manager.get_tool_node()
-            tool_result = tool_node.invoke({"messages": messages, "context": state["context"], "model": model, **self.model_config})
-            
-            # Extract the final response
-            response_text = tool_result["messages"][-1].content
-            
-            return {"output": response_text}
-        
-        builder = StateGraph(GraphState)
-        builder.add_node("generate_response", _generate_response)
-        builder.set_entry_point("generate_response")
-        builder.add_edge("generate_response", END)
-        return builder.compile()
+    def _get_langchain_tools(self) -> Optional[ToolNode]:
+        """Get the ToolNode instance from the tool manager."""
+        return self.tool_manager.get_tool_node()
